@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.5.2] - 2021-12-06
+
+## Changed
+
+- Added CI tests for AA 2.9+ / Django 3.2
+
 ## [1.5.1] - 2021-05-06
 
 ### Fixed

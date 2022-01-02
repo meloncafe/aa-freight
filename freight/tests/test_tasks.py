@@ -73,7 +73,7 @@ class TestSendContractNotifications(NoSocketsTestCase):
         self.assertTrue(mock_send_notifications.called)
 
 
-@override_settings(CELERY_ALWAYS_EAGER=True)
+@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 class TestRunContractsSync(NoSocketsTestCase):
     @patch(MODULE_PATH + ".update_contracts_esi")
     @patch(MODULE_PATH + ".send_contract_notifications")
@@ -115,7 +115,9 @@ class TestUpdateLocation(NoSocketsTestCase):
         self.assertFalse(mock_token.called)
         self.assertFalse(mock_update_or_create_from_esi.called)
 
-    @override_settings(CELERY_ALWAYS_EAGER=True)
+    @override_settings(
+        CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True
+    )
     def test_update_locations(self, mock_update_or_create_from_esi, mock_token):
         update_locations([1022167642188, 60003760])
         self.assertEqual(mock_update_or_create_from_esi.call_count, 2)

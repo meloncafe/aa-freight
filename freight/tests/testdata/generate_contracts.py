@@ -85,7 +85,7 @@ for _ in range(MAX_CONTRACTS):
         for_corporation=False,
         issuer_corporation=issuer_corporation,
         issuer=issuer,
-        reward=random.randint(100_000_000, 500_000_000),
+        reward=random.randint(1_000_000, 500_000_000),
         start_location=jita_44,
         status=random.choice(
             [
@@ -100,5 +100,5 @@ for _ in range(MAX_CONTRACTS):
         volume=random.randint(10_000, 300_000),
         pricing=pricing,
     )
-
+Contract.objects.update_pricing()
 print("DONE")

@@ -42,7 +42,7 @@ class TestUpdateContractsEsi(NoSocketsTestCase):
     def test_run_with_user_mocked(self, mock_update_contracts_esi):
         update_contracts_esi(user_pk=self.user.pk)
         self.assertTrue(mock_update_contracts_esi.called)
-        args, kwargs = mock_update_contracts_esi.call_args
+        _, kwargs = mock_update_contracts_esi.call_args
         self.assertEqual(kwargs["user"], self.user)
 
     @patch("freight.models.Token")
@@ -57,18 +57,13 @@ class TestUpdateContractsEsi(NoSocketsTestCase):
     def test_run_with_invalid_user(self, mock_update_contracts_esi):
         update_contracts_esi(user_pk=get_invalid_object_pk(User))
         self.assertTrue(mock_update_contracts_esi.called)
-        args, kwargs = mock_update_contracts_esi.call_args
+        _, kwargs = mock_update_contracts_esi.call_args
         self.assertIsNone(kwargs["user"])
 
 
 @patch(MODULE_PATH + ".Contract.objects.send_notifications")
 class TestSendContractNotifications(NoSocketsTestCase):
     def test_normal_run(self, mock_send_notifications):
-        send_contract_notifications()
-        self.assertTrue(mock_send_notifications.called)
-
-    def test_exceptions_are_handled(self, mock_send_notifications):
-        mock_send_notifications.side_effect = RuntimeError
         send_contract_notifications()
         self.assertTrue(mock_send_notifications.called)
 
@@ -91,12 +86,8 @@ class TestUpdateContractsPricing(NoSocketsTestCase):
         update_contracts_pricing()
         self.assertTrue(mock_update_pricing.called)
 
-    def test_exceptions_are_handled(self, mock_update_pricing):
-        mock_update_pricing.side_effect = RuntimeError
-        update_contracts_pricing()
-        self.assertTrue(mock_update_pricing.called)
 
-
+@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 @patch(MODULE_PATH + ".ContractHandler.token")
 @patch(MODULE_PATH + ".Location.objects.update_or_create_from_esi")
 class TestUpdateLocation(NoSocketsTestCase):
@@ -110,14 +101,6 @@ class TestUpdateLocation(NoSocketsTestCase):
         self.assertTrue(mock_token.called)
         self.assertTrue(mock_update_or_create_from_esi.called)
 
-    def test_exceptions_are_handled(self, mock_update_or_create_from_esi, mock_token):
-        update_location(99)
-        self.assertFalse(mock_token.called)
-        self.assertFalse(mock_update_or_create_from_esi.called)
-
-    @override_settings(
-        CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True
-    )
     def test_update_locations(self, mock_update_or_create_from_esi, mock_token):
         update_locations([1022167642188, 60003760])
         self.assertEqual(mock_update_or_create_from_esi.call_count, 2)

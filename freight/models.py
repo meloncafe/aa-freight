@@ -431,30 +431,25 @@ class Pricing(models.Model):
         self, volume: float, collateral: float, reward: float = None
     ) -> list:
         """returns list of validation error messages or none if ok"""
-
         if volume and volume < 0:
             raise ValueError("volume can not be negative")
         if collateral and collateral < 0:
             raise ValueError("collateral can not be negative")
         if reward and reward < 0:
             raise ValueError("reward can not be negative")
-
         issues = list()
-
         if volume is not None and self.volume_min and volume < self.volume_min:
             issues.append(
                 "below the minimum required volume of {:,.0f} m3".format(
                     self.volume_min
                 )
             )
-
         if volume is not None and self.volume_max and volume > self.volume_max:
             issues.append(
                 "exceeds the maximum allowed volume of {:,.0f} m3".format(
                     self.volume_max
                 )
             )
-
         if (
             collateral is not None
             and self.collateral_max
@@ -465,7 +460,6 @@ class Pricing(models.Model):
                     self.collateral_max
                 )
             )
-
         if (
             collateral is not None
             and self.collateral_min
@@ -476,7 +470,6 @@ class Pricing(models.Model):
                     self.collateral_min
                 )
             )
-
         if reward is not None:
             calculated_price = self.get_calculated_price(volume, collateral)
             if reward < calculated_price:
@@ -485,11 +478,9 @@ class Pricing(models.Model):
                         calculated_price
                     )
                 )
-
         if len(issues) == 0:
             return None
-        else:
-            return issues
+        return issues
 
 
 class EveEntity(models.Model):

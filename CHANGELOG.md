@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.6.0] - tbd
+
+## Changed
+
+- Dropped support for Python 3.6 & Django 3.1
+
 ## [1.5.2] - 2021-12-06
 
 ## Changed

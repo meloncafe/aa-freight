@@ -1,7 +1,7 @@
+from django.conf import settings
 from django.contrib import admin
 
 from . import tasks
-from .app_settings import FREIGHT_DEVELOPER_MODE
 from .models import (
     Contract,
     ContractCustomerNotification,
@@ -19,11 +19,8 @@ class LocationAdmin(admin.ModelAdmin):
     list_filter = ("category_id",)
     search_fields = ["name"]
     list_select_related = True
-
+    list_display_links = None
     actions = ["update_location"]
-
-    if not FREIGHT_DEVELOPER_MODE:
-        list_display_links = None
 
     def _category(self, obj):
         return obj.get_category_id_display()
@@ -34,16 +31,10 @@ class LocationAdmin(admin.ModelAdmin):
         return obj.solar_system_name
 
     def has_add_permission(self, request):
-        if FREIGHT_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return False
 
     def has_change_permission(self, request):
-        if FREIGHT_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return False
 
     @admin.display(description="Update selected locations from ESI")
     def update_location(self, request, queryset):
@@ -57,14 +48,6 @@ class LocationAdmin(admin.ModelAdmin):
             "Started updating {} locations. "
             "This can take a short while to complete.".format(len(location_ids)),
         )
-
-
-if FREIGHT_DEVELOPER_MODE:
-
-    @admin.register(EveEntity)
-    class EveEntityAdmin(admin.ModelAdmin):
-        list_display = ("name", "category")
-        list_filter = ("category",)
 
 
 @admin.register(Pricing)
@@ -108,16 +91,14 @@ class ContractHandlerAdmin(admin.ModelAdmin):
         "_is_sync_ok",
     )
     actions = ("start_sync", "send_notifications", "update_pricing")
-
-    if not FREIGHT_DEVELOPER_MODE:
-        readonly_fields = (
-            "organization",
-            "character",
-            "operation_mode",
-            "version_hash",
-            "last_sync",
-            "last_error",
-        )
+    readonly_fields = (
+        "organization",
+        "character",
+        "operation_mode",
+        "version_hash",
+        "last_sync",
+        "last_error",
+    )
 
     @admin.display(boolean=True, description="sync ok")
     def _is_sync_ok(self, obj):
@@ -168,9 +149,7 @@ class ContractAdmin(admin.ModelAdmin):
         ("issuer", admin.RelatedOnlyFieldListFilter),
     )
     search_fields = ["issuer"]
-
     list_select_related = True
-
     actions = ["send_pilots_notification", "send_customer_notification"]
 
     def get_queryset(self, request):
@@ -216,20 +195,29 @@ class ContractAdmin(admin.ModelAdmin):
             )
 
     def has_add_permission(self, request):
-        if FREIGHT_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return False
 
     def has_change_permission(self, request, obj=None):
-        if FREIGHT_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return False
 
 
-if FREIGHT_DEVELOPER_MODE:
+if settings.DEBUG:
 
     @admin.register(ContractCustomerNotification)
     class ContractCustomerNotificationAdmin(admin.ModelAdmin):
-        pass
+        def has_add_permission(self, *args, **kwargs):
+            return False
+
+        def has_change_permission(self, *args, **kwargs):
+            return False
+
+    @admin.register(EveEntity)
+    class EveEntityAdmin(admin.ModelAdmin):
+        list_display = ("name", "category")
+        list_filter = ("category",)
+
+        def has_add_permission(self, *args, **kwargs):
+            return False
+
+        def has_change_permission(self, *args, **kwargs):
+            return False

@@ -205,6 +205,33 @@ class ContractQuerySet(models.QuerySet):
             issuer__in=EveCharacter.objects.filter(character_ownership__user=user)
         )
 
+    def sent_pilot_notifications(self, rate_limted) -> None:
+        """Send all pilot notifications for these contracts."""
+        logger.info("Trying to send pilot notifications for %d contracts", self.count())
+        for contract in self:
+            if not contract.has_expired:
+                contract.send_pilot_notification()
+                if rate_limted:
+                    sleep(1)
+            else:
+                logger.debug("contract %s has expired", contract.contract_id)
+
+    def sent_customer_notifications(self, rate_limted, force_sent) -> None:
+        """Send customer notifications for these contracts."""
+        logger.debug(
+            "Checking %d contracts if customer notifications need to be sent",
+            self.count(),
+        )
+        for contract in self:
+            if contract.has_expired:
+                logger.debug("contract %d has expired", contract.contract_id)
+            elif contract.has_stale_status:
+                logger.debug("contract %d has stale status", contract.contract_id)
+            else:
+                contract.send_customer_notification(force_sent)
+                if rate_limted:
+                    sleep(1)
+
 
 class ContractManager(models.Manager):
     def get_queryset(self) -> models.QuerySet:
@@ -339,7 +366,6 @@ class ContractManager(models.Manager):
             issuer = EveCharacter.objects.create_character(
                 character_id=contract["issuer_id"]
             )
-
         try:
             issuer_corporation = EveCorporationInfo.objects.get(
                 corporation_id=contract["issuer_corporation_id"]
@@ -384,68 +410,51 @@ class ContractManager(models.Manager):
                     contract.issues = issues
                     contract.save()
 
-    def send_notifications(self, force_sent=False, rate_limted=True) -> None:
+    def send_notifications(
+        self, force_sent: bool = False, rate_limted: bool = True
+    ) -> None:
         """Send notifications for outstanding contracts that have pricing"""
-        logger.debug("start sending notifications")
+        from .models import Pricing
 
-        # pilot notifications
+        if (
+            self.count() > 0
+            and Pricing.objects.exists()
+            and not self.filter(pricing__isnull=False).exists()
+        ):
+            logger.info(
+                "There are no notifications to send, "
+                "because none of the existing contracts have a valid pricing."
+            )
+            return
+        self._sent_pilot_notifications(force_sent, rate_limted)
+        self._sent_customer_notifications(force_sent, rate_limted)
+
+    def _sent_pilot_notifications(self, force_sent: bool, rate_limted: bool) -> None:
         if FREIGHT_DISCORD_WEBHOOK_URL:
             contracts_qs = self.filter(
                 status__exact=self.model.Status.OUTSTANDING
             ).exclude(pricing__exact=None)
-
             if not force_sent:
                 contracts_qs = contracts_qs.filter(date_notified__exact=None)
-
             contracts_qs = contracts_qs.select_related()
-
             if contracts_qs.count() > 0:
-                self._sent_pilot_notifications(contracts_qs, rate_limted)
+                contracts_qs.sent_pilot_notifications(rate_limted)
+            else:
+                logger.debug("No new pilot notifications.")
         else:
             logger.debug("FREIGHT_DISCORD_WEBHOOK_URL not configured")
 
-        # customer notifications
+    def _sent_customer_notifications(self, force_sent: bool, rate_limted: bool) -> None:
         if FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL or FREIGHT_DISCORDPROXY_ENABLED:
             contracts_qs = self.filter(
                 status__in=self.model.Status.for_customer_notification
             ).exclude(pricing__exact=None)
-
             contracts_qs = contracts_qs.select_related()
-
             if contracts_qs.count() > 0:
-                self._sent_customer_notifications(contracts_qs, rate_limted, force_sent)
-
+                contracts_qs.sent_customer_notifications(rate_limted, force_sent)
+            else:
+                logger.debug("No new customer notifications.")
         else:
             logger.debug(
                 "FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL not configured or FREIGHT_DISCORDPROXY_ENABLED not enabled"
             )
-
-    def _sent_pilot_notifications(self, contracts_qs, rate_limted) -> None:
-        logger.info(
-            "Trying to send pilot notifications for %d contracts", contracts_qs.count()
-        )
-
-        for contract in contracts_qs:
-            if not contract.has_expired:
-                contract.send_pilot_notification()
-                if rate_limted:
-                    sleep(1)
-            else:
-                logger.debug("contract %s has expired", contract.contract_id)
-
-    def _sent_customer_notifications(
-        self, contracts_qs, rate_limted, force_sent
-    ) -> None:
-        logger.debug(
-            "Checking %d contracts if customer notifications need to be sent",
-            contracts_qs.count(),
-        )
-        for contract in contracts_qs:
-            if contract.has_expired:
-                logger.debug("contract %d has expired", contract.contract_id)
-            elif contract.has_stale_status:
-                logger.debug("contract %d has stale status", contract.contract_id)
-            else:
-                contract.send_customer_notification(force_sent)
-                if rate_limted:
-                    sleep(1)

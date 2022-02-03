@@ -141,15 +141,22 @@ class ContractAdmin(admin.ModelAdmin):
         "status",
         "date_issued",
         "issuer",
+        "pricing",
         "_pilots_notified",
         "_customer_notified",
     ]
     list_filter = (
         "status",
         ("issuer", admin.RelatedOnlyFieldListFilter),
+        ("pricing", admin.RelatedOnlyFieldListFilter),
     )
     search_fields = ["issuer"]
-    list_select_related = True
+    list_select_related = (
+        "issuer",
+        "pricing",
+        "pricing__start_location",
+        "pricing__end_location",
+    )
     actions = ["send_pilots_notification", "send_customer_notification"]
 
     def get_queryset(self, request):
@@ -158,15 +165,17 @@ class ContractAdmin(admin.ModelAdmin):
 
     @admin.display(boolean=True)
     def _pilots_notified(self, contract):
+        if contract.pricing_id is None:
+            return None
         return contract.date_notified is not None
 
     def _customer_notified(self, contract):
-        return ", ".join(
-            sorted(
-                [x.status for x in contract.customer_notifications.all()],
-                reverse=True,
-            )
-        )
+        if contract.pricing_id is None:
+            return "?"
+        notifications = [x.status for x in contract.customer_notifications.all()]
+        if not notifications:
+            return None
+        return ", ".join(sorted(notifications, reverse=True))
 
     @admin.display(
         description="Sent pilots notification for selected contracts to Discord"

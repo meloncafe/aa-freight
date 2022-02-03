@@ -9,10 +9,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.6.0] - tbd
 
+## Added
+
+- Showing pricing info for contracts on admin side
+- Debug logging when notifications can not be sent due to no matching pricing info for contacts
+
 ## Changed
 
 - Dropped support for Python 3.6 & Django 3.1
-- Squashed all migration
+
+## Fixed
+
+- Squashed migrations manually to fix migration error (#31)
 
 ## [1.5.2] - 2021-12-06
 

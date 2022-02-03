@@ -45,6 +45,7 @@ class LocationAdmin(admin.ModelAdmin):
         else:
             return False
 
+    @admin.display(description="Update selected locations from ESI")
     def update_location(self, request, queryset):
         location_ids = list()
         for obj in queryset:
@@ -56,8 +57,6 @@ class LocationAdmin(admin.ModelAdmin):
             "Started updating {} locations. "
             "This can take a short while to complete.".format(len(location_ids)),
         )
-
-    update_location.short_description = "Update selected locations from ESI"
 
 
 if FREIGHT_DEVELOPER_MODE:
@@ -86,20 +85,17 @@ class PricingAdmin(admin.ModelAdmin):
     )
     list_select_related = True
 
+    @admin.display(boolean=True)
     def _bidirectional(self, obj):
         return obj.is_bidirectional
 
-    _bidirectional.boolean = True
-
+    @admin.display(boolean=True)
     def _active(self, obj):
         return obj.is_active
 
-    _active.boolean = True
-
+    @admin.display(boolean=True)
     def _default(self, obj):
         return obj.is_default
-
-    _default.boolean = True
 
 
 @admin.register(ContractHandler)
@@ -123,14 +119,12 @@ class ContractHandlerAdmin(admin.ModelAdmin):
             "last_error",
         )
 
+    @admin.display(boolean=True, description="sync ok")
     def _is_sync_ok(self, obj):
         return obj.is_sync_ok
 
-    _is_sync_ok.boolean = True
-    _is_sync_ok.short_description = "sync ok"
-
+    @admin.display(description="Fetch contracts from Eve Online server")
     def start_sync(self, request, queryset):
-
         for obj in queryset:
             tasks.run_contracts_sync.delay(force_sync=True, user_pk=request.user.pk)
             text = "Started syncing contracts for: {} ".format(obj)
@@ -138,8 +132,7 @@ class ContractHandlerAdmin(admin.ModelAdmin):
 
             self.message_user(request, text)
 
-    start_sync.short_description = "Fetch contracts from Eve Online server"
-
+    @admin.display(description="Send notifications for outstanding contracts")
     def send_notifications(self, request, queryset):
 
         for obj in queryset:
@@ -148,18 +141,13 @@ class ContractHandlerAdmin(admin.ModelAdmin):
 
             self.message_user(request, text)
 
-    send_notifications.short_description = (
-        "Send notifications for outstanding contracts"
-    )
-
+    @admin.display(description="Update pricing info for all contracts")
     def update_pricing(self, request, queryset):
         del queryset
         tasks.update_contracts_pricing.delay()
         self.message_user(
             request, "Started updating pricing relations for all contracts"
         )
-
-    update_pricing.short_description = "Update pricing info for all contracts"
 
     def has_add_permission(self, request):
         return False
@@ -189,10 +177,9 @@ class ContractAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.prefetch_related("customer_notifications")
 
+    @admin.display(boolean=True)
     def _pilots_notified(self, contract):
         return contract.date_notified is not None
-
-    _pilots_notified.boolean = True
 
     def _customer_notified(self, contract):
         return ", ".join(
@@ -202,6 +189,9 @@ class ContractAdmin(admin.ModelAdmin):
             )
         )
 
+    @admin.display(
+        description="Sent pilots notification for selected contracts to Discord"
+    )
     def send_pilots_notification(self, request, queryset):
         for obj in queryset:
             obj.send_pilot_notification()
@@ -212,10 +202,9 @@ class ContractAdmin(admin.ModelAdmin):
                 ),
             )
 
-    send_pilots_notification.short_description = (
-        "Sent pilots notification for selected contracts to Discord"
+    @admin.display(
+        description="Sent customer notification for selected contracts to Discord"
     )
-
     def send_customer_notification(self, request, queryset):
         for obj in queryset:
             obj.send_customer_notification(force_sent=True)
@@ -225,10 +214,6 @@ class ContractAdmin(admin.ModelAdmin):
                     obj.contract_id
                 ),
             )
-
-    send_customer_notification.short_description = (
-        "Sent customer notification for selected contracts to Discord"
-    )
 
     def has_add_permission(self, request):
         if FREIGHT_DEVELOPER_MODE:

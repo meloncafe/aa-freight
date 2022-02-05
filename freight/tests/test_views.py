@@ -240,7 +240,7 @@ class TestSetupContractHandler(NoSocketsTestCase):
         cls.factory = RequestFactory()
 
     @patch(MODULE_PATH + ".FREIGHT_OPERATION_MODE", FREIGHT_OPERATION_MODE_MY_ALLIANCE)
-    @patch(MODULE_PATH + ".messages_plus", autospec=True)
+    @patch(MODULE_PATH + ".messages", autospec=True)
     @patch(MODULE_PATH + ".tasks.run_contracts_sync", autospec=True)
     def test_normal(self, mock_run_contracts_sync, mock_message_plus):
         ContractHandler.objects.all().delete()
@@ -260,7 +260,7 @@ class TestSetupContractHandler(NoSocketsTestCase):
         self.assertEqual(response.url, reverse("freight:index"))
 
     @patch(MODULE_PATH + ".FREIGHT_OPERATION_MODE", FREIGHT_OPERATION_MODE_MY_ALLIANCE)
-    @patch(MODULE_PATH + ".messages_plus", autospec=True)
+    @patch(MODULE_PATH + ".messages", autospec=True)
     @patch(MODULE_PATH + ".tasks.run_contracts_sync", autospec=True)
     def test_error_no_alliance_member(self, mock_run_contracts_sync, mock_message_plus):
         ContractHandler.objects.all().delete()
@@ -284,7 +284,7 @@ class TestSetupContractHandler(NoSocketsTestCase):
     @patch(
         MODULE_PATH + ".FREIGHT_OPERATION_MODE", FREIGHT_OPERATION_MODE_MY_CORPORATION
     )
-    @patch(MODULE_PATH + ".messages_plus", autospec=True)
+    @patch(MODULE_PATH + ".messages", autospec=True)
     @patch(MODULE_PATH + ".tasks.run_contracts_sync", autospec=True)
     def test_error_character_not_owned(
         self, mock_run_contracts_sync, mock_message_plus
@@ -309,7 +309,7 @@ class TestSetupContractHandler(NoSocketsTestCase):
     @patch(
         MODULE_PATH + ".FREIGHT_OPERATION_MODE", FREIGHT_OPERATION_MODE_MY_CORPORATION
     )
-    @patch(MODULE_PATH + ".messages_plus", autospec=True)
+    @patch(MODULE_PATH + ".messages", autospec=True)
     @patch(MODULE_PATH + ".tasks.run_contracts_sync", autospec=True)
     def test_error_wrong_operation_mode(
         self, mock_run_contracts_sync, mock_message_plus
@@ -454,7 +454,7 @@ class TestAddLocation(TestCase):
         cls.factory = RequestFactory()
 
     @patch(MODULE_PATH + ".FREIGHT_OPERATION_MODE", FREIGHT_OPERATION_MODE_MY_ALLIANCE)
-    @patch(MODULE_PATH + ".messages_plus", autospec=True)
+    @patch(MODULE_PATH + ".messages", autospec=True)
     @patch(MODULE_PATH + ".Location.objects.update_or_create_from_esi", autospec=True)
     def test_normal(self, mock_update_or_create_from_esi, mock_message_plus):
         location_id = 1022167642188
@@ -488,7 +488,7 @@ class TestAddLocation(TestCase):
         self.assertEqual(mock_message_plus.error.call_count, 0)
 
     @patch(MODULE_PATH + ".FREIGHT_OPERATION_MODE", FREIGHT_OPERATION_MODE_MY_ALLIANCE)
-    @patch(MODULE_PATH + ".messages_plus", autospec=True)
+    @patch(MODULE_PATH + ".messages", autospec=True)
     @patch(MODULE_PATH + ".Location.objects.update_or_create_from_esi", autospec=True)
     def test_fetching_location_fails(
         self, mock_update_or_create_from_esi, mock_message_plus

@@ -1,13 +1,14 @@
 import datetime
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import models
 from django.db.models import Count, Q, Sum
 from django.forms import HiddenInput
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
-from django.utils.html import format_html, mark_safe
+from django.utils.html import format_html
 from django.utils.timezone import now
 from esi.decorators import token_required
 from esi.models import Token
@@ -16,7 +17,6 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
-from app_utils.messages import messages_plus
 
 from . import __title__, tasks
 from .app_settings import (
@@ -296,7 +296,7 @@ def setup_contract_handler(request, token):
         EveEntity.get_category_for_operation_mode(FREIGHT_OPERATION_MODE)
         == EveEntity.Category.ALLIANCE
     ) and token_char.alliance_id is None:
-        messages_plus.error(
+        messages.error(
             request,
             "Can not setup contract handler, "
             "because {} is not a member of any alliance".format(token_char),
@@ -310,14 +310,13 @@ def setup_contract_handler(request, token):
                 user=request.user, character=token_char
             )
         except CharacterOwnership.DoesNotExist:
-            messages_plus.error(
+            messages.error(
                 request,
-                mark_safe(
+                format_html(
                     "You can only use your main or alt characters to setup "
                     " the contract handler. "
-                    "However, character <strong>{}</strong> is neither. ".format(
-                        token_char.character_name
-                    )
+                    "However, character <strong>{}</strong> is neither. ",
+                    token_char.character_name,
                 ),
             )
             success = False
@@ -325,7 +324,7 @@ def setup_contract_handler(request, token):
     if success:
         handler = ContractHandler.objects.first()
         if handler and handler.operation_mode != FREIGHT_OPERATION_MODE:
-            messages_plus.error(
+            messages.error(
                 request,
                 "There already is a contract handler installed for a "
                 "different operation mode. You need to first delete the "
@@ -348,19 +347,18 @@ def setup_contract_handler(request, token):
             },
         )
         tasks.run_contracts_sync.delay(force_sync=True, user_pk=request.user.pk)
-        messages_plus.success(
+        messages.success(
             request,
-            mark_safe(
+            format_html(
                 "Contract Handler setup started for "
                 "<strong>{}</strong> organization "
                 "with <strong>{}</strong> as sync character. "
                 "Operation mode: <strong>{}</strong>. "
                 "Started syncing of courier contracts. "
-                "You will receive a report once it is completed.".format(
-                    organization.name,
-                    handler.character.character.character_name,
-                    handler.operation_mode_friendly,
-                )
+                "You will receive a report once it is completed.",
+                organization.name,
+                handler.character.character.character_name,
+                handler.operation_mode_friendly,
             ),
         )
 
@@ -397,16 +395,14 @@ def add_location_2(request):
                     token=token, location_id=location_id, add_unknown=False
                 )
                 action_txt = "Added:" if created else "Updated:"
-                messages_plus.success(
+                messages.success(
                     request,
-                    mark_safe(
-                        "{} <strong>{}</strong>".format(action_txt, location.name)
-                    ),
+                    format_html("{} <strong>{}</strong>", action_txt, location.name),
                 )
                 return redirect("freight:add_location_2")
 
             except Exception as ex:
-                messages_plus.error(
+                messages.error(
                     request,
                     "Failed to add location with token from {} "
                     "for location ID {}: {}".format(

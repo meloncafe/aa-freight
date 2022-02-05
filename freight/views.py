@@ -181,7 +181,7 @@ def contract_list_data(request, category) -> JsonResponse:
                 "is_completed": contract.is_completed,
             }
         )
-    return JsonResponse(contracts_data, safe=False)
+    return JsonResponse({"data": contracts_data})
 
 
 def _contracts_for_contract_list(category, request) -> models.QuerySet:
@@ -466,7 +466,7 @@ def statistics_routes_data(request):
         for route in route_totals
         if route.contracts_count > 0
     ]
-    return JsonResponse(totals, safe=False)
+    return JsonResponse({"data": totals})
 
 
 @login_required
@@ -500,7 +500,7 @@ def statistics_pilots_data(request):
         for pilot in pilot_totals
         if pilot.contracts_count > 0
     ]
-    return JsonResponse(totals, safe=False)
+    return JsonResponse({"data": totals})
 
 
 @login_required
@@ -552,7 +552,7 @@ def statistics_pilot_corporations_data(request):
                     "volume": corporation.volume,
                 }
             )
-    return JsonResponse(totals, safe=False)
+    return JsonResponse({"data": totals})
 
 
 @login_required
@@ -585,5 +585,4 @@ def statistics_customer_data(request):
                     "volume": customer.volume,
                 }
             )
-
-    return JsonResponse(totals, safe=False)
+    return JsonResponse({"data": totals})

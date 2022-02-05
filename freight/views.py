@@ -7,7 +7,7 @@ from django.db import models
 from django.db.models import Count, Q, Sum
 from django.forms import HiddenInput
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import format_html
 from django.utils.timezone import now
 from esi.decorators import token_required
@@ -24,6 +24,7 @@ from .app_settings import (
     FREIGHT_OPERATION_MODE,
     FREIGHT_STATISTICS_MAX_DAYS,
 )
+from .forms import CalculatorForm
 from .models import Contract, ContractHandler, EveEntity, Freight, Location, Pricing
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -54,7 +55,7 @@ def add_common_context(request, context: dict) -> dict:
 
 @login_required
 @permission_required("freight.basic_access")
-def index(request):
+def index(_):
     return redirect("freight:calculator")
 
 
@@ -92,10 +93,6 @@ def contract_list_all(request):
 @permission_required("freight.basic_access")
 def contract_list_data(request, category) -> JsonResponse:
     """Return list of outstanding contracts for contract_list AJAX call."""
-
-    def character_format(obj):
-        return obj.character_name if obj else None
-
     contracts_data = list()
     for contract in _contracts_for_contract_list(category, request):
         if contract.has_pricing:
@@ -149,6 +146,10 @@ def contract_list_data(request, category) -> JsonResponse:
             contract.end_location,
             contract.end_location.solar_system_name,
         )
+        try:
+            issuer_character_name = contract.issuer.character_name
+        except AttributeError:
+            issuer_character_name = None
         contracts_data.append(
             {
                 "contract_id": contract.contract_id,
@@ -166,7 +167,7 @@ def contract_list_data(request, category) -> JsonResponse:
                 "volume": contract.volume,
                 "date_issued": contract.date_issued.isoformat(),
                 "date_expired": contract.date_expired.isoformat(),
-                "issuer": character_format(contract.issuer),
+                "issuer": issuer_character_name,
                 "date_accepted": contract.date_accepted.isoformat()
                 if contract.date_accepted
                 else None,
@@ -225,7 +226,6 @@ def _contracts_for_contract_list(category, request) -> models.QuerySet:
 @login_required
 @permission_required("freight.use_calculator")
 def calculator(request, pricing_pk=None):
-    from .forms import CalculatorForm
 
     if request.method != "POST":
         pricing = Pricing.objects.get_or_default(pricing_pk)
@@ -267,7 +267,6 @@ def calculator(request, pricing_pk=None):
     else:
         organization_name = None
         availability = None
-
     context = {
         "page_title": "Reward Calculator",
         "form": form,
@@ -290,8 +289,7 @@ def calculator(request, pricing_pk=None):
 @token_required(scopes=ContractHandler.get_esi_scopes())
 def setup_contract_handler(request, token):
     success = True
-    token_char = EveCharacter.objects.get(character_id=token.character_id)
-
+    token_char = get_object_or_404(EveCharacter, character_id=token.character_id)
     if (
         EveEntity.get_category_for_operation_mode(FREIGHT_OPERATION_MODE)
         == EveEntity.Category.ALLIANCE
@@ -361,7 +359,6 @@ def setup_contract_handler(request, token):
                 handler.operation_mode_friendly,
             ),
         )
-
     return redirect("freight:index")
 
 
@@ -380,12 +377,10 @@ def add_location_2(request):
 
     if ADD_LOCATION_TOKEN_TAG not in request.session:
         raise RuntimeError("Missing token in session")
-    else:
-        token = Token.objects.get(pk=request.session[ADD_LOCATION_TOKEN_TAG])
 
+    token = get_object_or_404(Token, pk=request.session[ADD_LOCATION_TOKEN_TAG])
     if request.method != "POST":
         form = AddLocationForm()
-
     else:
         form = AddLocationForm(request.POST)
         if form.is_valid():
@@ -394,14 +389,7 @@ def add_location_2(request):
                 location, created = Location.objects.update_or_create_from_esi(
                     token=token, location_id=location_id, add_unknown=False
                 )
-                action_txt = "Added:" if created else "Updated:"
-                messages.success(
-                    request,
-                    format_html("{} <strong>{}</strong>", action_txt, location.name),
-                )
-                return redirect("freight:add_location_2")
-
-            except Exception as ex:
+            except OSError as ex:
                 messages.error(
                     request,
                     "Failed to add location with token from {} "
@@ -409,7 +397,13 @@ def add_location_2(request):
                         token.character_name, location_id, type(ex).__name__
                     ),
                 )
-
+            else:
+                action_txt = "Added:" if created else "Updated:"
+                messages.success(
+                    request,
+                    format_html("{} <strong>{}</strong>", action_txt, location.name),
+                )
+                return redirect("freight:add_location_2")
     context = {
         "page_title": "Add / Update Location",
         "form": form,
@@ -436,7 +430,6 @@ def statistics(request):
 @permission_required("freight.view_statistics")
 def statistics_routes_data(request):
     """returns totals for statistics as JSON"""
-
     cutoff_date = now() - datetime.timedelta(days=FREIGHT_STATISTICS_MAX_DAYS)
     finished_contracts = Q(contracts__status=Contract.Status.FINISHED) & Q(
         contracts__date_completed__gte=cutoff_date
@@ -460,22 +453,19 @@ def statistics_routes_data(request):
             )
         )
     )
-
-    totals = list()
-    for route in route_totals:
-        if route.contracts_count > 0:
-            totals.append(
-                {
-                    "name": route.name,
-                    "contracts": route.contracts_count,
-                    "rewards": route.rewards,
-                    "collaterals": route.collaterals,
-                    "volume": route.volume,
-                    "pilots": route.pilots,
-                    "customers": route.customers,
-                }
-            )
-
+    totals = [
+        {
+            "name": route.name,
+            "contracts": route.contracts_count,
+            "rewards": route.rewards,
+            "collaterals": route.collaterals,
+            "volume": route.volume,
+            "pilots": route.pilots,
+            "customers": route.customers,
+        }
+        for route in route_totals
+        if route.contracts_count > 0
+    ]
     return JsonResponse(totals, safe=False)
 
 
@@ -483,12 +473,10 @@ def statistics_routes_data(request):
 @permission_required("freight.view_statistics")
 def statistics_pilots_data(request):
     """returns totals for statistics as JSON"""
-
     cutoff_date = now() - datetime.timedelta(days=FREIGHT_STATISTICS_MAX_DAYS)
     finished_contracts = Q(contracts_acceptor__status=Contract.Status.FINISHED) & Q(
         contracts_acceptor__date_completed__gte=cutoff_date
     )
-
     pilot_totals = (
         EveCharacter.objects.exclude(contracts_acceptor__isnull=True)
         .annotate(
@@ -500,21 +488,18 @@ def statistics_pilots_data(request):
         )
         .annotate(volume=Sum("contracts_acceptor__volume", filter=finished_contracts))
     )
-
-    totals = list()
-    for pilot in pilot_totals:
-        if pilot.contracts_count > 0:
-            totals.append(
-                {
-                    "name": pilot.character_name,
-                    "corporation": pilot.corporation_name,
-                    "contracts": pilot.contracts_count,
-                    "rewards": pilot.rewards,
-                    "collaterals": pilot.collaterals,
-                    "volume": pilot.volume,
-                }
-            )
-
+    totals = [
+        {
+            "name": pilot.character_name,
+            "corporation": pilot.corporation_name,
+            "contracts": pilot.contracts_count,
+            "rewards": pilot.rewards,
+            "collaterals": pilot.collaterals,
+            "volume": pilot.volume,
+        }
+        for pilot in pilot_totals
+        if pilot.contracts_count > 0
+    ]
     return JsonResponse(totals, safe=False)
 
 
@@ -522,7 +507,6 @@ def statistics_pilots_data(request):
 @permission_required("freight.view_statistics")
 def statistics_pilot_corporations_data(request):
     """returns totals for statistics as JSON"""
-
     cutoff_date = now() - datetime.timedelta(days=FREIGHT_STATISTICS_MAX_DAYS)
     finished_contracts = Q(
         contracts_acceptor_corporation__status=Contract.Status.FINISHED
@@ -552,7 +536,6 @@ def statistics_pilot_corporations_data(request):
             )
         )
     )
-
     totals = list()
     for corporation in corporation_totals:
         if corporation.contracts_count > 0:
@@ -569,7 +552,6 @@ def statistics_pilot_corporations_data(request):
                     "volume": corporation.volume,
                 }
             )
-
     return JsonResponse(totals, safe=False)
 
 
@@ -577,7 +559,6 @@ def statistics_pilot_corporations_data(request):
 @permission_required("freight.view_statistics")
 def statistics_customer_data(request):
     """returns totals for statistics as JSON"""
-
     cutoff_date = now() - datetime.timedelta(days=FREIGHT_STATISTICS_MAX_DAYS)
     finished_contracts = Q(contracts_issuer__status=Contract.Status.FINISHED) & Q(
         contracts_issuer__date_completed__gte=cutoff_date
@@ -591,7 +572,6 @@ def statistics_customer_data(request):
         )
         .annotate(volume=Sum("contracts_issuer__volume", filter=finished_contracts))
     )
-
     totals = list()
     for customer in customer_totals:
         if customer.contracts_count > 0:

@@ -495,7 +495,7 @@ class TestAddLocation(TestCase):
     ):
         location_id = 1022167642188
         Location.objects.get(id=location_id)
-        mock_update_or_create_from_esi.side_effect = RuntimeError("Test exception")
+        mock_update_or_create_from_esi.side_effect = OSError("Test exception")
 
         my_character = self.user.profile.main_character
         token = store_as_Token(

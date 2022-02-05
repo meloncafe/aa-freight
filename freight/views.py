@@ -3,7 +3,6 @@ import datetime
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.db import models
 from django.db.models import Count, Q, Sum
 from django.forms import HiddenInput
 from django.http import JsonResponse
@@ -18,7 +17,7 @@ from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
-from . import __title__, tasks
+from . import __title__, constants, tasks
 from .app_settings import (
     FREIGHT_APP_NAME,
     FREIGHT_OPERATION_MODE,
@@ -30,9 +29,6 @@ from .models import Contract, ContractHandler, EveEntity, Freight, Location, Pri
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 ADD_LOCATION_TOKEN_TAG = "freight_add_location_token"
-CONTRACT_LIST_USER = "user"
-CONTRACT_LIST_ACTIVE = "active"
-CONTRACT_LIST_ALL = "all"
 
 
 def add_common_context(request, context: dict) -> dict:
@@ -66,10 +62,9 @@ def contract_list_user(request):
         user_name = request.user.profile.main_character.character_name
     except AttributeError:
         user_name = request.user.user_name
-
     context = {
         "page_title": "My Contracts",
-        "category": CONTRACT_LIST_USER,
+        "category": constants.CONTRACT_LIST_USER,
         "user_name": user_name,
     }
     return render(
@@ -80,10 +75,7 @@ def contract_list_user(request):
 @login_required
 @permission_required("freight.view_contracts")
 def contract_list_all(request):
-    context = {
-        "page_title": "All Contracts",
-        "category": CONTRACT_LIST_ALL,
-    }
+    context = {"page_title": "All Contracts", "category": constants.CONTRACT_LIST_ALL}
     return render(
         request, "freight/contracts_all.html", add_common_context(request, context)
     )
@@ -91,10 +83,20 @@ def contract_list_all(request):
 
 @login_required
 @permission_required("freight.basic_access")
-def contract_list_data(request, category) -> JsonResponse:
+def contract_list_data(request, category: str) -> JsonResponse:
     """Return list of outstanding contracts for contract_list AJAX call."""
     contracts_data = list()
-    for contract in _contracts_for_contract_list(category, request):
+    contracts_qs = Contract.objects.select_related(
+        "acceptor",
+        "acceptor_corporation",
+        "end_location",
+        "issuer",
+        "start_location",
+        "pricing",
+        "pricing__start_location",
+        "pricing__end_location",
+    ).contract_list_filter(category=category, user=request.user)
+    for contract in contracts_qs:
         if contract.has_pricing:
             route_name = contract.pricing.name
             if not contract.has_pricing_errors:
@@ -182,45 +184,6 @@ def contract_list_data(request, category) -> JsonResponse:
             }
         )
     return JsonResponse({"data": contracts_data})
-
-
-def _contracts_for_contract_list(category, request) -> models.QuerySet:
-    """returns contracts corresponding to given category"""
-    contracts_qs = Contract.objects.select_related(
-        "acceptor",
-        "acceptor_corporation",
-        "end_location",
-        "issuer",
-        "start_location",
-        "pricing",
-        "pricing__start_location",
-        "pricing__end_location",
-    )
-    if category == CONTRACT_LIST_ACTIVE:
-        if not request.user.has_perm("freight.view_contracts"):
-            return contracts_qs.none()
-        return contracts_qs.filter(
-            status__in=[
-                Contract.Status.OUTSTANDING,
-                Contract.Status.IN_PROGRESS,
-            ]
-        ).exclude(date_expired__lt=now())
-    elif category == CONTRACT_LIST_ALL:
-        if not request.user.has_perm("freight.view_contracts"):
-            return contracts_qs.none()
-        return contracts_qs
-    elif category == CONTRACT_LIST_USER:
-        if not request.user.has_perm("freight.use_calculator"):
-            return contracts_qs.none()
-        return contracts_qs.issued_by_user(user=request.user).filter(
-            status__in=[
-                Contract.Status.OUTSTANDING,
-                Contract.Status.IN_PROGRESS,
-                Contract.Status.FINISHED,
-                Contract.Status.FAILED,
-            ]
-        )
-    raise ValueError("Invalid category: {}".format(category))
 
 
 @login_required

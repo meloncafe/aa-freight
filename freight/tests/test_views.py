@@ -1,4 +1,3 @@
-import json
 from unittest.mock import Mock, patch
 
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -8,9 +7,9 @@ from esi.models import Token
 
 from allianceauth.eveonline.models import EveCharacter
 from allianceauth.tests.auth_utils import AuthUtils
-from app_utils.testing import NoSocketsTestCase
+from app_utils.testing import NoSocketsTestCase, json_response_to_python
 
-from .. import views
+from .. import constants, views
 from ..app_settings import (
     FREIGHT_OPERATION_MODE_MY_ALLIANCE,
     FREIGHT_OPERATION_MODE_MY_CORPORATION,
@@ -24,16 +23,8 @@ HTTP_OK = 200
 HTTP_REDIRECT = 302
 
 
-def response_content_to_str(content) -> str:
-    return content.decode("utf-8")
-
-
-def json_response_to_python(response) -> object:
-    return json.loads(response_content_to_str(response.content))
-
-
 def json_response_to_python_dict(response) -> dict:
-    return {x["id"]: x for x in json_response_to_python(response)}
+    return {x["id"]: x for x in json_response_to_python(response)["data"]}
 
 
 class TestCalculator(NoSocketsTestCase):
@@ -99,15 +90,15 @@ class TestContractList(TestCase):
     def test_should_return_all_contracts(self):
         # given
         request = self.factory.get(
-            reverse("freight:contract_list_data", args={views.CONTRACT_LIST_ALL})
+            reverse("freight:contract_list_data", args={constants.CONTRACT_LIST_ALL})
         )
         request.user = self.user_1
         # when
-        response = views.contract_list_data(request, views.CONTRACT_LIST_ALL)
+        response = views.contract_list_data(request, constants.CONTRACT_LIST_ALL)
         # then
         all_contract_ids = set(Contract.objects.values_list("contract_id", flat=True))
         contract_ids_in_response = {
-            obj["contract_id"] for obj in json_response_to_python(response)
+            obj["contract_id"] for obj in json_response_to_python(response)["data"]
         }
         self.assertSetEqual(contract_ids_in_response, all_contract_ids)
 
@@ -122,15 +113,16 @@ class TestContractList(TestCase):
     """
 
     def test_active_data_has_all_contracts(self):
+        # given
         request = self.factory.get(
-            reverse("freight:contract_list_data", args={views.CONTRACT_LIST_ACTIVE})
+            reverse("freight:contract_list_data", args={constants.CONTRACT_LIST_ACTIVE})
         )
         request.user = self.user_1
-
-        response = views.contract_list_data(request, views.CONTRACT_LIST_ACTIVE)
+        # when
+        response = views.contract_list_data(request, constants.CONTRACT_LIST_ACTIVE)
+        # then
         self.assertEqual(response.status_code, HTTP_OK)
-
-        data = json_response_to_python(response)
+        data = json_response_to_python(response)["data"]
         contract_ids = {x["contract_id"] for x in data}
         self.assertSetEqual(
             contract_ids,
@@ -174,41 +166,41 @@ class TestContractList(TestCase):
 
     def test_data_user_no_access_without_permission_1(self):
         request = self.factory.get(
-            reverse("freight:contract_list_data", args={views.CONTRACT_LIST_USER})
+            reverse("freight:contract_list_data", args={constants.CONTRACT_LIST_USER})
         )
         request.user = self.user_2
-        response = views.contract_list_data(request, views.CONTRACT_LIST_USER)
-        data = json_response_to_python(response)
+        response = views.contract_list_data(request, constants.CONTRACT_LIST_USER)
+        data = json_response_to_python(response)["data"]
         self.assertListEqual(data, [])
 
     def test_data_user_no_access_without_permission_2(self):
         request = self.factory.get(
-            reverse("freight:contract_list_data", args={views.CONTRACT_LIST_ACTIVE})
+            reverse("freight:contract_list_data", args={constants.CONTRACT_LIST_ACTIVE})
         )
         request.user = self.user_2
-        response = views.contract_list_data(request, views.CONTRACT_LIST_ACTIVE)
-        data = json_response_to_python(response)
+        response = views.contract_list_data(request, constants.CONTRACT_LIST_ACTIVE)
+        data = json_response_to_python(response)["data"]
         self.assertListEqual(data, [])
 
     def test_data_user_no_access_without_permission_3(self):
         request = self.factory.get(
-            reverse("freight:contract_list_data", args={views.CONTRACT_LIST_ALL})
+            reverse("freight:contract_list_data", args={constants.CONTRACT_LIST_ALL})
         )
         request.user = self.user_2
-        response = views.contract_list_data(request, views.CONTRACT_LIST_ALL)
-        data = json_response_to_python(response)
+        response = views.contract_list_data(request, constants.CONTRACT_LIST_ALL)
+        data = json_response_to_python(response)["data"]
         self.assertListEqual(data, [])
 
     def test_data_user(self):
         request = self.factory.get(
-            reverse("freight:contract_list_data", args={views.CONTRACT_LIST_USER})
+            reverse("freight:contract_list_data", args={constants.CONTRACT_LIST_USER})
         )
         request.user = self.user_1
 
-        response = views.contract_list_data(request, views.CONTRACT_LIST_USER)
+        response = views.contract_list_data(request, constants.CONTRACT_LIST_USER)
         self.assertEqual(response.status_code, HTTP_OK)
 
-        data = json_response_to_python(response)
+        data = json_response_to_python(response)["data"]
         contract_ids = {x["contract_id"] for x in data}
         self.assertSetEqual(
             contract_ids,
@@ -358,7 +350,7 @@ class TestStatistics(NoSocketsTestCase):
         response = views.statistics_routes_data(request)
         self.assertEqual(response.status_code, HTTP_OK)
 
-        data = json_response_to_python(response)
+        data = json_response_to_python(response)["data"]
         self.assertListEqual(
             data,
             [
@@ -381,7 +373,7 @@ class TestStatistics(NoSocketsTestCase):
         response = views.statistics_pilots_data(request)
         self.assertEqual(response.status_code, HTTP_OK)
 
-        data = json_response_to_python(response)
+        data = json_response_to_python(response)["data"]
 
         self.assertListEqual(
             data,
@@ -406,7 +398,7 @@ class TestStatistics(NoSocketsTestCase):
         response = views.statistics_pilot_corporations_data(request)
         self.assertEqual(response.status_code, HTTP_OK)
 
-        data = json_response_to_python(response)
+        data = json_response_to_python(response)["data"]
 
         self.assertListEqual(
             data,
@@ -429,7 +421,7 @@ class TestStatistics(NoSocketsTestCase):
         response = views.statistics_customer_data(request)
         self.assertEqual(response.status_code, HTTP_OK)
 
-        data = json_response_to_python(response)
+        data = json_response_to_python(response)["data"]
 
         self.assertListEqual(
             data,

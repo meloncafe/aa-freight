@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from time import sleep
+from typing import Tuple
 
 from bravado.exception import HTTPForbidden, HTTPUnauthorized
 
@@ -14,7 +15,7 @@ from allianceauth.eveonline.providers import ObjectNotFound
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
-from . import __title__
+from . import __title__, constants
 from .app_settings import (
     FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL,
     FREIGHT_DISCORD_WEBHOOK_URL,
@@ -36,20 +37,17 @@ class PricingManager(models.Manager):
         pricing_qs = self.filter(is_active=True)
         pricing = pricing_qs.filter(is_default=True).first()
         if not pricing:
-            pricing = pricing_qs.first()
-
+            return pricing_qs.first()
         return pricing
 
     def get_or_default(self, pk: int = None):
         """returns the pricing for given pk if found else default pricing"""
         if pk:
             try:
-                pricing = self.filter(is_active=True).get(pk=pk)
+                return self.filter(is_active=True).get(pk=pk)
             except self.model.DoesNotExist:
-                pricing = self.get_default()
-        else:
-            pricing = self.get_default()
-        return pricing
+                return self.get_default()
+        return self.get_default()
 
 
 class LocationManager(models.Manager):
@@ -58,7 +56,7 @@ class LocationManager(models.Manager):
 
     def get_or_create_from_esi(
         self, token: Token, location_id: int, add_unknown: bool = True
-    ) -> tuple:
+    ) -> Tuple[models.Model, bool]:
         """gets or creates location object with data fetched from ESI"""
         from .models import Location
 
@@ -69,12 +67,11 @@ class LocationManager(models.Manager):
             location, created = self.update_or_create_from_esi(
                 token=token, location_id=location_id, add_unknown=add_unknown
             )
-
         return location, created
 
     def update_or_create_from_esi(
         self, token: Token, location_id: int, add_unknown: bool = True
-    ) -> tuple:
+    ) -> Tuple[models.Model, bool]:
         """updates or creates location object with data fetched from ESI"""
         from .models import Location
 
@@ -83,7 +80,7 @@ class LocationManager(models.Manager):
             station = esi.client.Universe.get_universe_stations_station_id(
                 station_id=location_id
             ).results()
-            location, created = self.update_or_create(
+            return self.update_or_create(
                 id=location_id,
                 defaults={
                     "name": station["name"],
@@ -92,76 +89,68 @@ class LocationManager(models.Manager):
                     "category_id": Location.Category.STATION_ID,
                 },
             )
-
-        else:
-            try:
-                structure = esi.client.Universe.get_universe_structures_structure_id(
-                    token=token.valid_access_token(), structure_id=location_id
-                ).results()
-                location, created = self.update_or_create(
+        try:
+            structure = esi.client.Universe.get_universe_structures_structure_id(
+                token=token.valid_access_token(), structure_id=location_id
+            ).results()
+        except (HTTPUnauthorized, HTTPForbidden) as ex:
+            logger.warn("%s: No access to this structure: %s", location_id, ex)
+            if add_unknown:
+                return self.get_or_create(
                     id=location_id,
                     defaults={
-                        "name": structure["name"],
-                        "solar_system_id": structure["solar_system_id"],
-                        "type_id": structure["type_id"],
+                        "name": "Unknown structure {}".format(location_id),
                         "category_id": Location.Category.STRUCTURE_ID,
                     },
                 )
-            except (HTTPUnauthorized, HTTPForbidden) as ex:
-                logger.warn("%s: No access to this structure: %s", location_id, ex)
-                if add_unknown:
-                    location, created = self.get_or_create(
-                        id=location_id,
-                        defaults={
-                            "name": "Unknown structure {}".format(location_id),
-                            "category_id": Location.Category.STRUCTURE_ID,
-                        },
-                    )
-                else:
-                    raise ex
-
-        return location, created
+            raise ex
+        else:
+            return self.update_or_create(
+                id=location_id,
+                defaults={
+                    "name": structure["name"],
+                    "solar_system_id": structure["solar_system_id"],
+                    "type_id": structure["type_id"],
+                    "category_id": Location.Category.STRUCTURE_ID,
+                },
+            )
 
 
 class EveEntityManager(models.Manager):
-    def get_or_create_from_esi(self, id: int) -> tuple:
+    def get_or_create_from_esi(self, id: int) -> Tuple[models.Model, bool]:
         """gets or creates entity object with data fetched from ESI"""
         from .models import EveEntity
 
         try:
             entity = self.get(id=id)
-            created = False
+            return entity, False
         except EveEntity.DoesNotExist:
-            entity, created = self.update_or_create_from_esi(id)
+            return self.update_or_create_from_esi(id)
 
-        return entity, created
-
-    def update_or_create_from_esi(self, id: int) -> tuple:
+    def update_or_create_from_esi(self, id: int) -> Tuple[models.Model, bool]:
         """updates or creates entity object with data fetched from ESI"""
         response = esi.client.Universe.post_universe_names(ids=[id]).results()
         if len(response) != 1:
             raise ObjectNotFound(id, "unknown_type")
-        else:
-            entity_data = response[0]
-        entity, created = self.update_or_create(
+        entity_data = response[0]
+        return self.update_or_create(
             id=entity_data["id"],
             defaults={
                 "name": entity_data["name"],
                 "category": entity_data["category"],
             },
         )
-        return entity, created
 
     def update_or_create_from_evecharacter(
         self, character: EveCharacter, category: str
-    ) -> tuple:
+    ) -> Tuple[models.Model, bool]:
         """updates or creates EveEntity object from an EveCharacter object"""
         from .models import EveEntity
 
         if category == EveEntity.Category.ALLIANCE:
             if not character.alliance_id:
                 raise ValueError("character is not an alliance member")
-            eve_entity, created = self.update_or_create(
+            return self.update_or_create(
                 id=character.alliance_id,
                 defaults={
                     "name": character.alliance_name,
@@ -169,7 +158,7 @@ class EveEntityManager(models.Manager):
                 },
             )
         elif category == EveEntity.Category.CORPORATION:
-            eve_entity, created = self.update_or_create(
+            return self.update_or_create(
                 id=character.corporation_id,
                 defaults={
                     "name": character.corporation_name,
@@ -177,17 +166,14 @@ class EveEntityManager(models.Manager):
                 },
             )
         elif category == EveEntity.Category.CHARACTER:
-            eve_entity, created = self.update_or_create(
+            return self.update_or_create(
                 id=character.character_id,
                 defaults={
                     "name": character.character_name,
                     "category": EveEntity.Category.CHARACTER,
                 },
             )
-        else:
-            raise ValueError("Invalid category: {}".format(category))
-
-        return eve_entity, created
+        raise ValueError("Invalid category: {}".format(category))
 
 
 class ContractQuerySet(models.QuerySet):
@@ -232,21 +218,45 @@ class ContractQuerySet(models.QuerySet):
                 if rate_limted:
                     sleep(1)
 
+    def contract_list_filter(self, category: str, user: User) -> models.QuerySet:
+        """Filter contracts by category and user permission for contract list view."""
+        if category == constants.CONTRACT_LIST_ACTIVE:
+            if not user.has_perm("freight.view_contracts"):
+                return self.none()
+            return self.filter(
+                status__in=[
+                    self.model.Status.OUTSTANDING,
+                    self.model.Status.IN_PROGRESS,
+                ]
+            ).exclude(date_expired__lt=now())
+        elif category == constants.CONTRACT_LIST_ALL:
+            if not user.has_perm("freight.view_contracts"):
+                return self.none()
+            return self
+        elif category == constants.CONTRACT_LIST_USER:
+            if not user.has_perm("freight.use_calculator"):
+                return self.none()
+            return self.issued_by_user(user=user).filter(
+                status__in=[
+                    self.model.Status.OUTSTANDING,
+                    self.model.Status.IN_PROGRESS,
+                    self.model.Status.FINISHED,
+                    self.model.Status.FAILED,
+                ]
+            )
+        raise ValueError("Invalid category: {}".format(category))
 
-class ContractManager(models.Manager):
-    def get_queryset(self) -> models.QuerySet:
-        return ContractQuerySet(self.model, using=self._db)
 
+class ContractManagerBase(models.Manager):
     def update_or_create_from_dict(
         self, handler: object, contract: dict, token: Token
-    ) -> tuple:
+    ) -> Tuple[models.Model, bool]:
         """updates or creates a contract from given dict"""
         # validate types
         self._ensure_datetime_type_or_none(contract, "date_accepted")
         self._ensure_datetime_type_or_none(contract, "date_completed")
         self._ensure_datetime_type_or_none(contract, "date_expired")
         self._ensure_datetime_type_or_none(contract, "date_issued")
-
         acceptor, acceptor_corporation = self._identify_contracts_acceptor(contract)
         issuer_corporation, issuer = self._identify_contracts_issuer(contract)
         date_accepted = (
@@ -257,7 +267,7 @@ class ContractManager(models.Manager):
         )
         title = contract["title"] if "title" in contract else None
         start_location, end_location = self._identify_locations(contract, token)
-        obj, created = self.update_or_create(
+        return self.update_or_create(
             handler=handler,
             contract_id=contract["contract_id"],
             defaults={
@@ -282,7 +292,6 @@ class ContractManager(models.Manager):
                 "issues": None,
             },
         )
-        return obj, created
 
     @staticmethod
     def _ensure_datetime_type_or_none(contract: dict, property_name: str):
@@ -352,11 +361,9 @@ class ContractManager(models.Manager):
                 )
                 acceptor = None
                 acceptor_corporation = None
-
         else:
             acceptor = None
             acceptor_corporation = None
-
         return acceptor, acceptor_corporation
 
     def _identify_contracts_issuer(self, contract) -> tuple:
@@ -458,3 +465,6 @@ class ContractManager(models.Manager):
             logger.debug(
                 "FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL not configured or FREIGHT_DISCORDPROXY_ENABLED not enabled"
             )
+
+
+ContractManager = ContractManagerBase.from_queryset(ContractQuerySet)

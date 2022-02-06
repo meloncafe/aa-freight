@@ -4,9 +4,9 @@ from datetime import timedelta
 from urllib.parse import urljoin
 
 import dhooks_lite
-import grpc
-from discordproxy import discord_api_pb2, discord_api_pb2_grpc
-from discordproxy.helpers import parse_error_details
+from discordproxy.client import DiscordClient
+from discordproxy.discord_api_pb2 import Embed
+from discordproxy.exceptions import DiscordProxyException
 from google.protobuf import json_format
 
 from django.conf import settings
@@ -1231,7 +1231,6 @@ class Contract(models.Model):
                 "%s: Could not find matching user for issuer: %s", self, self.issuer
             )
             return
-
         try:
             discord_user_id = DiscordUser.objects.get(user=issuer_user).uid
         except DiscordUser.DoesNotExist:
@@ -1240,11 +1239,11 @@ class Contract(models.Model):
             )
             return
 
-        if FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL:
-            self._send_to_customer_via_webhook(status_to_report, discord_user_id)
-
         if FREIGHT_DISCORDPROXY_ENABLED:
-            self._send_to_customer_via_grpc(status_to_report, discord_user_id)
+            self._send_to_customer_via_discordproxy(status_to_report, discord_user_id)
+
+        elif FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL:
+            self._send_to_customer_via_webhook(status_to_report, discord_user_id)
 
     def _send_to_customer_via_webhook(self, status_to_report, discord_user_id):
         if FREIGHT_DISCORD_DISABLE_BRANDING:
@@ -1285,7 +1284,7 @@ class Contract(models.Model):
                 response.status_code,
             )
 
-    def _send_to_customer_via_grpc(self, status_to_report, discord_user_id):
+    def _send_to_customer_via_discordproxy(self, status_to_report, discord_user_id):
         logger.info(
             "%s: Trying to send customer notification "
             "about contract %s on status %s to discord dm",
@@ -1293,31 +1292,24 @@ class Contract(models.Model):
             self.contract_id,
             status_to_report,
         )
-        if not grpc:
-            logger.error("Discord Proxy not installed. Can not send direct messages.")
-            return
-
         embed_dct = self._generate_embed(for_issuer=True).asdict()
-        embed = json_format.ParseDict(embed_dct, discord_api_pb2.Embed())
+        embed = json_format.ParseDict(embed_dct, Embed())
         contents = self._generate_contents(
             discord_user_id, status_to_report, include_mention=False
         )
-        with grpc.insecure_channel(f"localhost:{FREIGHT_DISCORDPROXY_PORT}") as channel:
-            client = discord_api_pb2_grpc.DiscordApiStub(channel)
-            request = discord_api_pb2.SendDirectMessageRequest(
+        client = DiscordClient(target=f"localhost:{FREIGHT_DISCORDPROXY_PORT}")
+        try:
+            client.create_direct_message(
                 user_id=discord_user_id, content=contents, embed=embed
             )
-            try:
-                client.SendDirectMessage(request)
-            except grpc.RpcError as e:
-                details = parse_error_details(e)
-                logger.error("Failed to send message to Discord: %s", details)
-            else:
-                ContractCustomerNotification.objects.update_or_create(
-                    contract=self,
-                    status=status_to_report,
-                    defaults={"date_notified": now()},
-                )
+        except DiscordProxyException as ex:
+            logger.error("Failed to send message to Discord: %s", ex)
+        else:
+            ContractCustomerNotification.objects.update_or_create(
+                contract=self,
+                status=status_to_report,
+                defaults={"date_notified": now()},
+            )
 
     def _generate_contents(
         self, discord_user_id, status_to_report, include_mention=True

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Dropped support for Python 3.6 & Django 3.1
 - Code overhaul
+- Use new discordproxy approach for sending message
 
 ## Fixed
 

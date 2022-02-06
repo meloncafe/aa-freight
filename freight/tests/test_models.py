@@ -1,8 +1,9 @@
 import datetime as dt
 from unittest.mock import Mock, patch
 
-import grpc
 from dhooks_lite import Embed
+from discordproxy.exceptions import to_discord_proxy_exception
+from discordproxy.tests.factories import create_rpc_error
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -826,12 +827,16 @@ if "discord" in app_labels():
 
         @patch(MODULE_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", True)
         @patch(MODULE_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
-        @patch(MODULE_PATH + ".discord_api_pb2_grpc.DiscordApiStub")
-        def test_can_send_status_via_grpc(self, DiscordApiStub, mock_webhook_execute):
+        @patch(MODULE_PATH + ".DiscordClient", spec=True)
+        def test_can_send_status_via_grpc(
+            self, mock_DiscordClient, mock_webhook_execute
+        ):
             # when
             self.contract_1.send_customer_notification()
             # then
-            self.assertTrue(DiscordApiStub.return_value.SendDirectMessage.called)
+            self.assertTrue(
+                mock_DiscordClient.return_value.create_direct_message.called
+            )
             obj = self.contract_1.customer_notifications.get(
                 status=Contract.Status.OUTSTANDING
             )
@@ -841,16 +846,20 @@ if "discord" in app_labels():
 
         @patch(MODULE_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", True)
         @patch(MODULE_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
-        @patch(MODULE_PATH + ".discord_api_pb2_grpc.DiscordApiStub")
-        def test_can_handle_grpc_error(self, DiscordApiStub, mock_webhook_execute):
+        @patch(MODULE_PATH + ".DiscordClient", spec=True)
+        def test_can_handle_grpc_error(self, mock_DiscordClient, mock_webhook_execute):
             # given
-            my_exception = grpc.RpcError()
+            my_exception = to_discord_proxy_exception(create_rpc_error())
             my_exception.details = lambda: "{}"
-            DiscordApiStub.return_value.SendDirectMessage.side_effect = my_exception
+            mock_DiscordClient.return_value.create_direct_message.side_effect = (
+                my_exception
+            )
             # when
             self.contract_1.send_customer_notification()
             # then
-            self.assertTrue(DiscordApiStub.return_value.SendDirectMessage.called)
+            self.assertTrue(
+                mock_DiscordClient.return_value.create_direct_message.called
+            )
 
 
 class TestLocation(NoSocketsTestCase):

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## Changed
 
 - Dropped support for Python 3.6 & Django 3.1
+- Code overhaul
 
 ## Fixed
 

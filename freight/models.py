@@ -122,10 +122,6 @@ class Location(models.Model):
 
     objects = LocationManager()
 
-    @classmethod
-    def get_esi_scopes(cls):
-        return ["esi-universe.read_structures.v1"]
-
     def __str__(self):
         return self.name
 
@@ -145,6 +141,10 @@ class Location(models.Model):
     @property
     def location_name(self):
         return self.name.rsplit("-", 1)[1].strip()
+
+    @classmethod
+    def get_esi_scopes(cls):
+        return ["esi-universe.read_structures.v1"]
 
 
 class Pricing(models.Model):
@@ -260,6 +260,9 @@ class Pricing(models.Model):
 
     objects = PricingManager()
 
+    class Meta:
+        unique_together = (("start_location", "end_location"),)
+
     def __str__(self) -> str:
         return self.name
 
@@ -268,8 +271,44 @@ class Pricing(models.Model):
             self.__class__.__name__, self.pk, self.name_full
         )
 
-    class Meta:
-        unique_together = (("start_location", "end_location"),)
+    def clean(self):
+        if (
+            self.price_base is None
+            and self.price_min is None
+            and self.price_per_volume is None
+            and self.price_per_collateral_percent is None
+        ):
+            raise ValidationError("You must specify at least one price component")
+
+        if self.start_location_id and self.end_location_id:
+            if (
+                Pricing.objects.filter(
+                    start_location=self.end_location,
+                    end_location=self.start_location,
+                    is_bidirectional=True,
+                ).exists()
+                and self.is_bidirectional
+            ):
+                raise ValidationError(
+                    "There already exists a bidirectional pricing for this route. "
+                    "Please set this pricing to non-bidirectional to save it. "
+                    "And after you must also set the other pricing to "
+                    "non-bidirectional."
+                )
+
+            if (
+                Pricing.objects.filter(
+                    start_location=self.end_location,
+                    end_location=self.start_location,
+                    is_bidirectional=False,
+                ).exists()
+                and self.is_bidirectional
+            ):
+                raise ValidationError(
+                    "There already exists a non bidirectional pricing for "
+                    "this route. You need to mark this pricing as "
+                    "non-bidirectional too to continue."
+                )
 
     @property
     def name(self) -> str:
@@ -346,45 +385,6 @@ class Pricing(models.Model):
             and self.price_per_volume is None
             and self.price_per_collateral_percent is None
         )
-
-    def clean(self):
-        if (
-            self.price_base is None
-            and self.price_min is None
-            and self.price_per_volume is None
-            and self.price_per_collateral_percent is None
-        ):
-            raise ValidationError("You must specify at least one price component")
-
-        if self.start_location_id and self.end_location_id:
-            if (
-                Pricing.objects.filter(
-                    start_location=self.end_location,
-                    end_location=self.start_location,
-                    is_bidirectional=True,
-                ).exists()
-                and self.is_bidirectional
-            ):
-                raise ValidationError(
-                    "There already exists a bidirectional pricing for this route. "
-                    "Please set this pricing to non-bidirectional to save it. "
-                    "And after you must also set the other pricing to "
-                    "non-bidirectional."
-                )
-
-            if (
-                Pricing.objects.filter(
-                    start_location=self.end_location,
-                    end_location=self.start_location,
-                    is_bidirectional=False,
-                ).exists()
-                and self.is_bidirectional
-            ):
-                raise ValidationError(
-                    "There already exists a non bidirectional pricing for "
-                    "this route. You need to mark this pricing as "
-                    "non-bidirectional too to continue."
-                )
 
     def get_calculated_price(self, volume: float, collateral: float) -> float:
         """returns the calculated price for the given parameters"""
@@ -697,18 +697,18 @@ class ContractHandler(models.Model):
         except TokenInvalidError:
             logger.error("%s: Invalid token for fetching contracts", self)
             self.set_sync_status(self.ERROR_TOKEN_INVALID)
-            raise TokenInvalidError()
+            raise TokenInvalidError() from None
 
         except TokenExpiredError:
             logger.error("%s: Token expired for fetching contracts", self)
             self.set_sync_status(self.ERROR_TOKEN_EXPIRED)
-            raise TokenExpiredError()
+            raise TokenExpiredError() from None
 
         else:
             if not token:
                 logger.error("%s: No valid token found", self)
                 self.set_sync_status(self.ERROR_TOKEN_INVALID)
-                raise TokenInvalidError()
+                raise TokenInvalidError() from None
 
         return token
 
@@ -987,6 +987,12 @@ class Contract(models.Model):
 
     objects = ContractManager()
 
+    class Meta:
+        unique_together = (("handler", "contract_id"),)
+        indexes = [
+            models.Index(fields=["status"]),
+        ]
+
     def __str__(self) -> str:
         return "{}: {} -> {}".format(
             self.contract_id,
@@ -1001,12 +1007,6 @@ class Contract(models.Model):
             self.start_location.solar_system_name,
             self.end_location.solar_system_name,
         )
-
-    class Meta:
-        unique_together = (("handler", "contract_id"),)
-        indexes = [
-            models.Index(fields=["status"]),
-        ]
 
     @property
     def is_completed(self) -> bool:

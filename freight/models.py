@@ -263,6 +263,16 @@ class Pricing(models.Model):
     class Meta:
         unique_together = (("start_location", "end_location"),)
 
+    def save(self, update_contracts=True, *args, **kwargs) -> None:
+        super().save(*args, **kwargs)
+        if update_contracts:
+            self._update_contracts()
+
+    def _update_contracts(self):
+        from .tasks import update_contracts_pricing
+
+        update_contracts_pricing.delay()
+
     def __str__(self) -> str:
         return self.name
 
@@ -909,6 +919,20 @@ class Contract(models.Model):
         REVERSED = "reversed", "reversed"
 
         @classproperty
+        def completed(cls) -> set:
+            """Status representing a completed contract."""
+            return {
+                cls.FINISHED_ISSUER,
+                cls.FINISHED_CONTRACTOR,
+                cls.FINISHED_ISSUER,
+                cls.CANCELED,
+                cls.REJECTED,
+                cls.DELETED,
+                cls.FINISHED,
+                cls.FAILED,
+            }
+
+        @classproperty
         def for_customer_notification(cls) -> set:
             return {cls.OUTSTANDING, cls.IN_PROGRESS, cls.FINISHED, cls.FAILED}
 
@@ -1011,16 +1035,7 @@ class Contract(models.Model):
     @property
     def is_completed(self) -> bool:
         """whether this contract is completed or active"""
-        return self.status in [
-            self.Status.FINISHED_ISSUER,
-            self.Status.FINISHED_CONTRACTOR,
-            self.Status.FINISHED_ISSUER,
-            self.Status.CANCELED,
-            self.Status.REJECTED,
-            self.Status.DELETED,
-            self.Status.FINISHED,
-            self.Status.FAILED,
-        ]
+        return self.status in self.Status.completed
 
     @property
     def is_in_progress(self) -> bool:

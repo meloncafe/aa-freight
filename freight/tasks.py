@@ -53,10 +53,11 @@ def run_contracts_sync(force_sync=False, user_pk=None) -> None:
 
 
 @shared_task
-def update_contracts_pricing() -> None:
+def update_contracts_pricing() -> int:
     """Updates pricing for all contracts"""
-    logger.info("Started updating contracts pricing")
-    Contract.objects.update_pricing()
+    update_count = Contract.objects.filter_not_completed().update_pricing()
+    logger.info("Updated pricing for %s contracts", update_count)
+    return update_count
 
 
 @shared_task

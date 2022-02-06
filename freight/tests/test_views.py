@@ -14,9 +14,10 @@ from ..app_settings import (
     FREIGHT_OPERATION_MODE_MY_ALLIANCE,
     FREIGHT_OPERATION_MODE_MY_CORPORATION,
 )
-from ..models import Contract, ContractHandler, Location, Pricing
-from . import DisconnectPricingSaveHandler, generate_token, store_as_Token
+from ..models import Contract, ContractHandler, Location
+from . import generate_token, store_as_Token
 from .testdata import create_contract_handler_w_contracts
+from .testdata.factories import create_pricing
 
 MODULE_PATH = "freight.views"
 HTTP_OK = 200
@@ -33,12 +34,11 @@ class TestCalculator(NoSocketsTestCase):
         super().setUpClass()
         _, cls.user = create_contract_handler_w_contracts()
         AuthUtils.add_permission_to_user_by_name("freight.use_calculator", cls.user)
-        with DisconnectPricingSaveHandler():
-            jita = Location.objects.get(id=60003760)
-            amamake = Location.objects.get(id=1022167642188)
-            cls.pricing = Pricing.objects.create(
-                start_location=jita, end_location=amamake, price_base=500000000
-            )
+        jita = Location.objects.get(id=60003760)
+        amamake = Location.objects.get(id=1022167642188)
+        cls.pricing = create_pricing(
+            start_location=jita, end_location=amamake, price_base=500000000
+        )
         Contract.objects.update_pricing()
         cls.factory = RequestFactory()
 
@@ -70,12 +70,11 @@ class TestContractList(TestCase):
         AuthUtils.add_permission_to_user_by_name("freight.basic_access", cls.user_1)
         AuthUtils.add_permission_to_user_by_name("freight.use_calculator", cls.user_1)
         AuthUtils.add_permission_to_user_by_name("freight.view_contracts", cls.user_1)
-        with DisconnectPricingSaveHandler():
-            jita = Location.objects.get(id=60003760)
-            amamake = Location.objects.get(id=1022167642188)
-            cls.pricing = Pricing.objects.create(
-                start_location=jita, end_location=amamake, price_base=500000000
-            )
+        jita = Location.objects.get(id=60003760)
+        amamake = Location.objects.get(id=1022167642188)
+        cls.pricing = create_pricing(
+            start_location=jita, end_location=amamake, price_base=500000000
+        )
         Contract.objects.update_pricing()
         cls.factory = RequestFactory()
         cls.user_2 = AuthUtils.create_user("Lex Luthor")
@@ -222,12 +221,11 @@ class TestSetupContractHandler(NoSocketsTestCase):
         AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", cls.user
         )
-        with DisconnectPricingSaveHandler():
-            jita = Location.objects.get(id=60003760)
-            amamake = Location.objects.get(id=1022167642188)
-            cls.pricing = Pricing.objects.create(
-                start_location=jita, end_location=amamake, price_base=500000000
-            )
+        jita = Location.objects.get(id=60003760)
+        amamake = Location.objects.get(id=1022167642188)
+        cls.pricing = create_pricing(
+            start_location=jita, end_location=amamake, price_base=500000000
+        )
         Contract.objects.update_pricing()
         cls.factory = RequestFactory()
 
@@ -334,12 +332,11 @@ class TestStatistics(NoSocketsTestCase):
         cls.user = AuthUtils.add_permission_to_user_by_name(
             "freight.view_statistics", cls.user
         )
-        with DisconnectPricingSaveHandler():
-            jita = Location.objects.get(id=60003760)
-            amamake = Location.objects.get(id=1022167642188)
-            cls.pricing = Pricing.objects.create(
-                start_location=jita, end_location=amamake, price_base=500000000
-            )
+        jita = Location.objects.get(id=60003760)
+        amamake = Location.objects.get(id=1022167642188)
+        cls.pricing = create_pricing(
+            start_location=jita, end_location=amamake, price_base=500000000
+        )
         Contract.objects.update_pricing()
         cls.factory = RequestFactory()
 

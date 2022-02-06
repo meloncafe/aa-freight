@@ -185,11 +185,49 @@ class ContractQuerySet(models.QuerySet):
             .count()
         )
 
+    def filter_not_completed(self):
+        return self.exclude(status__in=self.model.Status.completed)
+
     def issued_by_user(self, user: User) -> models.QuerySet:
         """returns QS of contracts issued by a character owned by given user"""
         return self.filter(
             issuer__in=EveCharacter.objects.filter(character_ownership__user=user)
         )
+
+    def update_pricing(self) -> int:
+        """Updates contracts with matching pricing"""
+        from .models import Pricing
+
+        def _make_key(location_id_1: int, location_id_2: int) -> str:
+            return "{}x{}".format(int(location_id_1), int(location_id_2))
+
+        pricings = dict()
+        for obj in Pricing.objects.filter(is_active=True).order_by("-id"):
+            pricings[_make_key(obj.start_location_id, obj.end_location_id)] = obj
+            if obj.is_bidirectional:
+                pricings[_make_key(obj.end_location_id, obj.start_location_id)] = obj
+
+        update_count = 0
+        for contract in self.all():
+            with transaction.atomic():
+                route_key = _make_key(
+                    contract.start_location_id, contract.end_location_id
+                )
+                if route_key in pricings:
+                    pricing = pricings[route_key]
+                    issues_list = contract.get_price_check_issues(pricing)
+                    if issues_list:
+                        issues = json.dumps(issues_list)
+                    else:
+                        issues = None
+                else:
+                    pricing = None
+                    issues = None
+                contract.pricing = pricing
+                contract.issues = issues
+                contract.save()
+                update_count += 1
+        return update_count
 
     def sent_pilot_notifications(self, rate_limted) -> None:
         """Send all pilot notifications for these contracts."""
@@ -382,40 +420,6 @@ class ContractManagerBase(models.Manager):
                 corp_id=contract["issuer_corporation_id"]
             )
         return issuer_corporation, issuer
-
-    def update_pricing(self) -> None:
-        """Updates contracts with matching pricing"""
-        from .models import Pricing
-
-        def _make_key(location_id_1: int, location_id_2: int) -> str:
-            return "{}x{}".format(int(location_id_1), int(location_id_2))
-
-        pricings = dict()
-        for obj in Pricing.objects.filter(is_active=True).order_by("-id"):
-            pricings[_make_key(obj.start_location_id, obj.end_location_id)] = obj
-            if obj.is_bidirectional:
-                pricings[_make_key(obj.end_location_id, obj.start_location_id)] = obj
-
-        for contract in self.all():
-            if contract.status == self.model.Status.OUTSTANDING or not contract.pricing:
-                with transaction.atomic():
-                    route_key = _make_key(
-                        contract.start_location_id, contract.end_location_id
-                    )
-                    if route_key in pricings:
-                        pricing = pricings[route_key]
-                        issues_list = contract.get_price_check_issues(pricing)
-                        if issues_list:
-                            issues = json.dumps(issues_list)
-                        else:
-                            issues = None
-                    else:
-                        pricing = None
-                        issues = None
-
-                    contract.pricing = pricing
-                    contract.issues = issues
-                    contract.save()
 
     def send_notifications(
         self, force_sent: bool = False, rate_limted: bool = True

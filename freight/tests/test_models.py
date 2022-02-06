@@ -33,7 +33,6 @@ from ..models import (
     Location,
     Pricing,
 )
-from . import DisconnectPricingSaveHandler
 from .testdata import (
     characters_data,
     contracts_data,
@@ -41,6 +40,7 @@ from .testdata import (
     create_entities_from_characters,
     create_locations,
 )
+from .testdata.factories import create_pricing
 
 MODULE_PATH = "freight.models"
 PATCH_FREIGHT_OPERATION_MODE = MODULE_PATH + ".FREIGHT_OPERATION_MODE"
@@ -109,97 +109,92 @@ class TestPricing(NoSocketsTestCase):
         )
 
     def test_create_pricings(self):
-        with DisconnectPricingSaveHandler():
-            # first pricing
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-            )
-            # pricing with different route
-            Pricing.objects.create(
-                start_location=self.amarr,
-                end_location=self.amamake,
-                price_base=250000000,
-            )
-            # pricing with reverse route then pricing 1
-            Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=350000000,
-            )
+        # first pricing
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+        )
+        # pricing with different route
+        create_pricing(
+            start_location=self.amarr,
+            end_location=self.amamake,
+            price_base=250000000,
+        )
+        # pricing with reverse route then pricing 1
+        create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=350000000,
+        )
 
     def test_create_pricing_no_2nd_bidirectional_allowed(self):
-        with DisconnectPricingSaveHandler():
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-                is_bidirectional=True,
-            )
-            p = Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=500000000,
-                is_bidirectional=True,
-            )
-            with self.assertRaises(ValidationError):
-                p.clean()
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+            is_bidirectional=True,
+        )
+        p = create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=500000000,
+            is_bidirectional=True,
+        )
+        with self.assertRaises(ValidationError):
+            p.clean()
 
     def test_create_pricing_no_2nd_unidirectional_allowed(self):
-        with DisconnectPricingSaveHandler():
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-                is_bidirectional=True,
-            )
-            p = Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=500000000,
-                is_bidirectional=False,
-            )
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+            is_bidirectional=True,
+        )
+        p = create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=500000000,
+            is_bidirectional=False,
+        )
+        p.clean()
+        # this test case has been temporary inverted to allow users
+        # to migrate their pricings
+        """
+        with self.assertRaises(ValidationError):
             p.clean()
-            # this test case has been temporary inverted to allow users
-            # to migrate their pricings
-            """
-            with self.assertRaises(ValidationError):
-                p.clean()
-            """
+        """
 
     def test_create_pricing_2nd_must_be_unidirectional_a(self):
-        with DisconnectPricingSaveHandler():
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-                is_bidirectional=False,
-            )
-            p = Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=500000000,
-                is_bidirectional=True,
-            )
-            with self.assertRaises(ValidationError):
-                p.clean()
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+            is_bidirectional=False,
+        )
+        p = create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=500000000,
+            is_bidirectional=True,
+        )
+        with self.assertRaises(ValidationError):
+            p.clean()
 
     def test_create_pricing_2nd_ok_when_unidirectional(self):
-        with DisconnectPricingSaveHandler():
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-                is_bidirectional=False,
-            )
-            p = Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=500000000,
-                is_bidirectional=False,
-            )
-            p.clean()
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+            is_bidirectional=False,
+        )
+        p = create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=500000000,
+            is_bidirectional=False,
+        )
+        p.clean()
 
     def test_name_uni_directional(self):
         p = Pricing(
@@ -489,12 +484,9 @@ class TestContract(NoSocketsTestCase):
 
     def setUp(self):
         # create contracts
-        with DisconnectPricingSaveHandler():
-            self.pricing = Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-            )
+        self.pricing = create_pricing(
+            start_location=self.jita, end_location=self.amamake, price_base=500000000
+        )
         self.contract = Contract.objects.create(
             handler=self.handler,
             contract_id=1,
@@ -1536,12 +1528,11 @@ class TestContractCustomerNotification(NoSocketsTestCase):
 
     def setUp(self):
         # create contracts
-        with DisconnectPricingSaveHandler():
-            self.pricing = Pricing.objects.create(
-                start_location=self.location_1,
-                end_location=self.location_2,
-                price_base=500000000,
-            )
+        self.pricing = create_pricing(
+            start_location=self.location_1,
+            end_location=self.location_2,
+            price_base=500000000,
+        )
         self.contract = Contract.objects.create(
             handler=self.handler,
             contract_id=1,

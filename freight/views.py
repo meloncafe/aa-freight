@@ -61,7 +61,7 @@ def contract_list_user(request):
     try:
         user_name = request.user.profile.main_character.character_name
     except AttributeError:
-        user_name = request.user.user_name
+        user_name = request.user.username
     context = {
         "page_title": "My Contracts",
         "category": constants.CONTRACT_LIST_USER,

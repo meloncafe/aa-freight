@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -20,18 +21,10 @@ from .testdata import create_contract_handler_w_contracts
 from .testdata.factories import create_pricing
 
 MODULE_PATH = "freight.views"
-HTTP_OK = 200
-HTTP_REDIRECT = 302
 
 
 def json_response_to_python_dict(response) -> dict:
     return {x["id"]: x for x in json_response_to_python(response)["data"]}
-
-
-class TestContractViews(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
 
 
 class TestCalculator(NoSocketsTestCase):
@@ -54,26 +47,27 @@ class TestCalculator(NoSocketsTestCase):
         request = self.factory.get(reverse("freight:index"))
         request.user = self.user
         response = views.index(request)
-        self.assertEqual(response.status_code, HTTP_REDIRECT)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(response.url, reverse("freight:calculator"))
 
     def test_calculator_access_with_permission(self):
         request = self.factory.get(reverse("freight:calculator"))
         request.user = self.user
         response = views.calculator(request)
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_calculator_no_access_without_permission(self):
         request = self.factory.get(reverse("freight:calculator"))
         request.user = AuthUtils.create_user("Lex Luthor")
         response = views.calculator(request)
-        self.assertNotEqual(response.status_code, HTTP_OK)
+        self.assertNotEqual(response.status_code, HTTPStatus.OK)
 
 
 class TestContractList(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.factory = RequestFactory()
         _, cls.user_1 = create_contract_handler_w_contracts()
         cls.user_1 = AuthUtils.add_permission_to_user_by_name(
             "freight.basic_access", cls.user_1
@@ -90,17 +84,25 @@ class TestContractList(TestCase):
             start_location=jita, end_location=amamake, price_base=500000000
         )
         Contract.objects.update_pricing()
-        cls.factory = RequestFactory()
         cls.user_2 = AuthUtils.create_user("Lex Luthor")
         cls.user_2 = AuthUtils.add_permission_to_user_by_name(
             "freight.basic_access", cls.user_2
         )
 
+    def test_should_open_all_contracts_page(self):
+        # given
+        request = self.factory.get(reverse("freight:contract_list_all"))
+        request.user = self.user_1
+        # when
+        response = views.contract_list_all(request)
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
     def test_all_no_access_without_permission(self):
         request = self.factory.get(reverse("freight:contract_list_all"))
         request.user = self.user_2
         response = views.contract_list_all(request)
-        self.assertNotEqual(response.status_code, HTTP_OK)
+        self.assertNotEqual(response.status_code, HTTPStatus.OK)
 
     def test_should_return_all_contracts(self):
         # given
@@ -124,7 +126,7 @@ class TestContractList(TestCase):
         request.user = self.user_1
 
         response = views.contract_list_active(request)
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
     """
 
     def test_active_data_has_all_contracts(self):
@@ -136,7 +138,7 @@ class TestContractList(TestCase):
         # when
         response = views.contract_list_data(request, constants.CONTRACT_LIST_ACTIVE)
         # then
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         data = json_response_to_python(response)["data"]
         contract_ids = {x["contract_id"] for x in data}
         self.assertSetEqual(
@@ -170,14 +172,26 @@ class TestContractList(TestCase):
         request = self.factory.get(reverse("freight:contract_list_user"))
         request.user = self.user_2
         response = views.contract_list_user(request)
-        self.assertNotEqual(response.status_code, HTTP_OK)
+        self.assertNotEqual(response.status_code, HTTPStatus.OK)
 
     def test_user_access_with_permission(self):
         request = self.factory.get(reverse("freight:contract_list_user"))
         request.user = self.user_1
 
         response = views.contract_list_user(request)
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_user_access_with_permission_and_no_main(self):
+        # given
+        user = AuthUtils.create_user("John Doe")
+        user = AuthUtils.add_permission_to_user_by_name("freight.basic_access", user)
+        user = AuthUtils.add_permission_to_user_by_name("freight.use_calculator", user)
+        request = self.factory.get(reverse("freight:contract_list_user"))
+        request.user = user
+        # when
+        response = views.contract_list_user(request)
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_data_user_no_access_without_permission_1(self):
         request = self.factory.get(
@@ -213,7 +227,7 @@ class TestContractList(TestCase):
         request.user = self.user_1
 
         response = views.contract_list_data(request, constants.CONTRACT_LIST_USER)
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
         data = json_response_to_python(response)["data"]
         contract_ids = {x["contract_id"] for x in data}
@@ -262,7 +276,7 @@ class TestSetupContractHandler(NoSocketsTestCase):
 
         response = orig_view(request, token)
         self.assertEqual(mock_run_contracts_sync.delay.call_count, 1)
-        self.assertEqual(response.status_code, HTTP_REDIRECT)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(response.url, reverse("freight:index"))
 
     @patch(MODULE_PATH + ".FREIGHT_OPERATION_MODE", FREIGHT_OPERATION_MODE_MY_ALLIANCE)
@@ -284,7 +298,7 @@ class TestSetupContractHandler(NoSocketsTestCase):
 
         response = orig_view(request, token)
         self.assertEqual(mock_message_plus.error.call_count, 1)
-        self.assertEqual(response.status_code, HTTP_REDIRECT)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(response.url, reverse("freight:index"))
 
     @patch(
@@ -309,7 +323,7 @@ class TestSetupContractHandler(NoSocketsTestCase):
 
         response = orig_view(request, token)
         self.assertEqual(mock_message_plus.error.call_count, 1)
-        self.assertEqual(response.status_code, HTTP_REDIRECT)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(response.url, reverse("freight:index"))
 
     @patch(
@@ -332,7 +346,7 @@ class TestSetupContractHandler(NoSocketsTestCase):
 
         response = orig_view(request, token)
         self.assertEqual(mock_message_plus.error.call_count, 1)
-        self.assertEqual(response.status_code, HTTP_REDIRECT)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(response.url, reverse("freight:index"))
 
 
@@ -356,12 +370,21 @@ class TestStatistics(NoSocketsTestCase):
         Contract.objects.update_pricing()
         cls.factory = RequestFactory()
 
+    def test_should_open_statistics_page(self):
+        # given
+        request = self.factory.get(reverse("freight:statistics"))
+        request.user = self.user
+        # when
+        response = views.statistics(request)
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
     def test_statistics_routes_data(self):
         request = self.factory.get(reverse("freight:statistics_routes_data"))
         request.user = self.user
 
         response = views.statistics_routes_data(request)
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
         data = json_response_to_python(response)["data"]
         self.assertListEqual(
@@ -384,7 +407,7 @@ class TestStatistics(NoSocketsTestCase):
         request.user = self.user
 
         response = views.statistics_pilots_data(request)
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
         data = json_response_to_python(response)["data"]
 
@@ -409,7 +432,7 @@ class TestStatistics(NoSocketsTestCase):
         request.user = self.user
 
         response = views.statistics_pilot_corporations_data(request)
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
         data = json_response_to_python(response)["data"]
 
@@ -432,7 +455,7 @@ class TestStatistics(NoSocketsTestCase):
         request.user = self.user
 
         response = views.statistics_customer_data(request)
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
         data = json_response_to_python(response)["data"]
 
@@ -487,7 +510,7 @@ class TestAddLocation(TestCase):
         orig_view = views.add_location_2.__wrapped__.__wrapped__
 
         response = orig_view(request)
-        self.assertEqual(response.status_code, HTTP_REDIRECT)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(response.url, reverse("freight:add_location_2"))
         self.assertEqual(mock_message_plus.success.call_count, 1)
         self.assertEqual(mock_message_plus.error.call_count, 0)
@@ -523,6 +546,6 @@ class TestAddLocation(TestCase):
         orig_view = views.add_location_2.__wrapped__.__wrapped__
 
         response = orig_view(request)
-        self.assertEqual(response.status_code, HTTP_OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(mock_message_plus.success.call_count, 0)
         self.assertEqual(mock_message_plus.error.call_count, 1)

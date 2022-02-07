@@ -1039,8 +1039,9 @@ class TestContractsSync(NoSocketsTestCase):
     @patch(PATCH_FREIGHT_OPERATION_MODE, FREIGHT_OPERATION_MODE_MY_ALLIANCE)
     @patch(MODULE_PATH + ".Token")
     def test_abort_when_token_expired(self, mock_Token):
+        # given
         mock_Token.objects.filter.side_effect = TokenExpiredError()
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1048,10 +1049,10 @@ class TestContractsSync(NoSocketsTestCase):
             character=self.main_ownership,
             operation_mode=FREIGHT_OPERATION_MODE_MY_ALLIANCE,
         )
-
-        # run manager sync
-        self.assertFalse(handler.update_contracts_esi())
-
+        # when
+        result = handler.update_contracts_esi()
+        # then
+        self.assertFalse(result)
         handler.refresh_from_db()
         self.assertEqual(handler.last_error, ContractHandler.ERROR_TOKEN_EXPIRED)
 
@@ -1059,7 +1060,7 @@ class TestContractsSync(NoSocketsTestCase):
     @patch(MODULE_PATH + ".Token")
     def test_abort_when_token_invalid(self, mock_Token):
         mock_Token.objects.filter.side_effect = TokenInvalidError()
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1079,8 +1080,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = (
             None
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1120,8 +1120,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = Mock(
             spec=Token
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1147,8 +1146,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = Mock(
             spec=Token
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1200,8 +1198,7 @@ class TestContractsSync(NoSocketsTestCase):
             spec=Token
         )
         mock_notify.side_effect = RuntimeError
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1250,8 +1247,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = Mock(
             spec=Token
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1316,8 +1312,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = Mock(
             spec=Token
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(

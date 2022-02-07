@@ -28,12 +28,20 @@ def json_response_to_python_dict(response) -> dict:
     return {x["id"]: x for x in json_response_to_python(response)["data"]}
 
 
+class TestContractViews(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+
 class TestCalculator(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         _, cls.user = create_contract_handler_w_contracts()
-        AuthUtils.add_permission_to_user_by_name("freight.use_calculator", cls.user)
+        cls.user = AuthUtils.add_permission_to_user_by_name(
+            "freight.use_calculator", cls.user
+        )
         jita = Location.objects.get(id=60003760)
         amamake = Location.objects.get(id=1022167642188)
         cls.pricing = create_pricing(
@@ -67,9 +75,15 @@ class TestContractList(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         _, cls.user_1 = create_contract_handler_w_contracts()
-        AuthUtils.add_permission_to_user_by_name("freight.basic_access", cls.user_1)
-        AuthUtils.add_permission_to_user_by_name("freight.use_calculator", cls.user_1)
-        AuthUtils.add_permission_to_user_by_name("freight.view_contracts", cls.user_1)
+        cls.user_1 = AuthUtils.add_permission_to_user_by_name(
+            "freight.basic_access", cls.user_1
+        )
+        cls.user_1 = AuthUtils.add_permission_to_user_by_name(
+            "freight.use_calculator", cls.user_1
+        )
+        cls.user_1 = AuthUtils.add_permission_to_user_by_name(
+            "freight.view_contracts", cls.user_1
+        )
         jita = Location.objects.get(id=60003760)
         amamake = Location.objects.get(id=1022167642188)
         cls.pricing = create_pricing(
@@ -78,7 +92,9 @@ class TestContractList(TestCase):
         Contract.objects.update_pricing()
         cls.factory = RequestFactory()
         cls.user_2 = AuthUtils.create_user("Lex Luthor")
-        AuthUtils.add_permission_to_user_by_name("freight.basic_access", cls.user_2)
+        cls.user_2 = AuthUtils.add_permission_to_user_by_name(
+            "freight.basic_access", cls.user_2
+        )
 
     def test_all_no_access_without_permission(self):
         request = self.factory.get(reverse("freight:contract_list_all"))
@@ -218,7 +234,7 @@ class TestSetupContractHandler(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         _, cls.user = create_contract_handler_w_contracts([])
-        AuthUtils.add_permission_to_user_by_name(
+        cls.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", cls.user
         )
         jita = Location.objects.get(id=60003760)

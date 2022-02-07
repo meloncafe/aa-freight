@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
-## [1.6.0] - tbd
+## [1.6.0] - 2022-02-07
 
 ## Added
 
+- Add copy&paste buttons for contract details (#38)
 - Showing pricing info for contracts on admin side
 - Debug logging when notifications can not be sent due to no matching pricing info for contacts
 

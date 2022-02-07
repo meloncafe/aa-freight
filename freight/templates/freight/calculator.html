@@ -135,27 +135,52 @@
                                 <dd>{{ availability }}</dd>
 
                                 <dt>Location:</dt>
-                                <dd>{{ pricing.start_location }}</dd>
+                                <dd>
+                                    {{ pricing.start_location }}
+                                    <span class="copy_to_clipboard" data-text="{{ pricing.start_location }}">
+                                        &nbsp;&nbsp;<i class="far fa-copy"></i></span>
+                                    </span>
+                                </dd>
+
+                                <hr>
+
+                                <dt>Ship To:</dt>
+                                <dd>
+                                    {{ pricing.end_location }}
+                                    <span class="copy_to_clipboard" data-text="{{ pricing.end_location }}">
+                                        &nbsp;&nbsp;<i class="far fa-copy"></i></span>
+                                    </span>
+                                </dd>
+
+                                <dt>Reward:</dt>
+                                <dd>
+                                    {{ price|formatnumber:"0"|default_if_none:"???" }} ISK
+                                    <span class="copy_to_clipboard" data-text="{{ price }}">
+                                        &nbsp;&nbsp;<i class="far fa-copy"></i></span>
+                                    </span>
+                                </dd>
+
+                                <dt>Collateral:</dt>
+                                <dd>
+                                    {{ collateral|formatnumber:"0"|default_if_none:"???" }} ISK
+                                    <span class="copy_to_clipboard" data-text="{{ collateral }}">
+                                        &nbsp;&nbsp;<i class="far fa-copy"></i></span>
+                                    </span>
+                                </dd>
 
                                 {% if pricing.days_to_expire %}
                                     <dt>Expiration:</dt>
                                     <dd>{{ pricing.days_to_expire }} days ({{ expires_on|date:'Y-m-d' }})</dd>
                                 {% endif %}
 
-                                <hr>
-
-                                <dt>Reward:</dt>
-                                <dd>{{ price|formatnumber:"0"|default_if_none:"???" }} ISK</dd>
-
-                                <dt>Collateral:</dt>
-                                <dd>{{ collateral|formatnumber:"0"|default_if_none:"???" }} ISK</dd>
-
-                                <dt>Destination:</dt>
-                                <dd>{{ pricing.end_location }}</dd>
-
                                 {% if pricing.days_to_complete %}
                                     <dt>Days to complete:</dt>
-                                    <dd>{{ pricing.days_to_complete|default_if_none:"-" }}</dd>
+                                    <dd>
+                                        {{ pricing.days_to_complete|default_if_none:"-" }}
+                                        <span class="copy_to_clipboard" data-text="{{ pricing.days_to_complete }}">
+                                            &nbsp;&nbsp;<i class="far fa-copy"></i></span>
+                                        </span>
+                                    </dd>
                                 {% endif %}
 
                                 {% if pricing.requires_volume %}
@@ -215,7 +240,7 @@
                 );
             });
 
-            $('#text_price').on('click', '.copy_to_clipboard', function (event) {
+            $('.copy_to_clipboard').on('click', function (event) {
                 const text = event.currentTarget.getAttribute("data-text")
                 copyToClipboard(text)
             });

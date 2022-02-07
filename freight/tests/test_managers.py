@@ -24,13 +24,14 @@ from ..app_settings import (
     FREIGHT_OPERATION_MODE_MY_CORPORATION,
 )
 from ..models import Contract, EveEntity, Location, Pricing
-from . import DisconnectPricingSaveHandler, get_invalid_object_pk
+from . import get_invalid_object_pk
 from .testdata import (
     characters_data,
     create_contract_handler_w_contracts,
     create_locations,
     structures_data,
 )
+from .testdata.factories import create_pricing
 
 MANAGERS_PATH = "freight.managers"
 MODELS_PATH = "freight.models"
@@ -394,91 +395,88 @@ class TestContractManager(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.handler, cls.user = create_contract_handler_w_contracts(
-            [149409016, 149409061, 149409062, 149409063, 149409064, 149409006]
+            [
+                149409016,
+                149409061,
+                149409062,
+                149409063,
+                149409064,
+                149409006,
+                149409318,
+            ]
         )
 
     def test_issued_by_user(self):
+        # when
         qs = Contract.objects.all().issued_by_user(user=self.user)
+        # then
         self.assertSetEqual(
             set(qs.values_list("contract_id", flat=True)),
             {149409016, 149409061, 149409062, 149409063, 149409064},
         )
 
     def test_can_update_pricing_for_bidirectional(self):
+        # given
         jita = Location.objects.get(id=60003760)
         amamake = Location.objects.get(id=1022167642188)
         amarr = Location.objects.get(id=60008494)
-
-        with DisconnectPricingSaveHandler():
-            pricing_1 = Pricing.objects.create(
-                start_location=jita,
-                end_location=amamake,
-                price_base=500000000,
-                is_bidirectional=True,
-            )
-            Pricing.objects.create(
-                start_location=amamake,
-                end_location=jita,
-                price_base=350000000,
-                is_bidirectional=True,
-            )
-            pricing_3 = Pricing.objects.create(
-                start_location=amarr,
-                end_location=amamake,
-                price_base=250000000,
-                is_bidirectional=True,
-            )
-        Contract.objects.update_pricing()
-
+        pricing_1 = create_pricing(
+            start_location=jita,
+            end_location=amamake,
+            price_base=500000000,
+            is_bidirectional=True,
+        )
+        pricing_3 = create_pricing(
+            start_location=amarr,
+            end_location=amamake,
+            price_base=250000000,
+            is_bidirectional=True,
+        )
+        # when
+        result = Contract.objects.update_pricing()
+        # then
+        self.assertEqual(result, 7)
         contract_1 = Contract.objects.get(contract_id=149409016)
         self.assertEqual(contract_1.pricing, pricing_1)
-
-        # pricing 2 should have been ignored, since it covers the same route
         contract_2 = Contract.objects.get(contract_id=149409061)
         self.assertEqual(contract_2.pricing, pricing_1)
-
         contract_3 = Contract.objects.get(contract_id=149409062)
         self.assertEqual(contract_3.pricing, pricing_3)
 
     def test_can_update_pricing_for_unidirectional(self):
+        # given
         jita = Location.objects.get(id=60003760)
         amamake = Location.objects.get(id=1022167642188)
         amarr = Location.objects.get(id=60008494)
-
-        with DisconnectPricingSaveHandler():
-            pricing_1 = Pricing.objects.create(
-                start_location=jita,
-                end_location=amamake,
-                price_base=500000000,
-                is_bidirectional=False,
-            )
-            pricing_2 = Pricing.objects.create(
-                start_location=amamake,
-                end_location=jita,
-                price_base=350000000,
-                is_bidirectional=False,
-            )
-            pricing_3 = Pricing.objects.create(
-                start_location=amarr,
-                end_location=amamake,
-                price_base=250000000,
-                is_bidirectional=True,
-            )
-
+        pricing_1 = create_pricing(
+            start_location=jita,
+            end_location=amamake,
+            price_base=500000000,
+            is_bidirectional=False,
+        )
+        pricing_2 = create_pricing(
+            start_location=amamake,
+            end_location=jita,
+            price_base=350000000,
+            is_bidirectional=False,
+        )
+        pricing_3 = create_pricing(
+            start_location=amarr,
+            end_location=amamake,
+            price_base=250000000,
+            is_bidirectional=True,
+        )
+        # when
         Contract.objects.update_pricing()
-
+        # then
         contract_1 = Contract.objects.get(contract_id=149409016)
         self.assertEqual(contract_1.pricing, pricing_1)
-
         contract_2 = Contract.objects.get(contract_id=149409061)
         self.assertEqual(contract_2.pricing, pricing_2)
-
         contract_3 = Contract.objects.get(contract_id=149409062)
         self.assertEqual(contract_3.pricing, pricing_3)
-
         contract_4 = Contract.objects.get(contract_id=149409063)
         self.assertEqual(contract_4.pricing, pricing_3)
-
         contract_5 = Contract.objects.get(contract_id=149409064)
         self.assertIsNone(contract_5.pricing)
 
@@ -785,14 +783,11 @@ if "discord" in app_labels():
         def setUpClass(cls):
             super().setUpClass()
             cls.handler, _ = create_contract_handler_w_contracts()
-            # disable pricing signal
             jita = Location.objects.get(id=60003760)
             amamake = Location.objects.get(id=1022167642188)
-            with DisconnectPricingSaveHandler():
-                Pricing.objects.create(
-                    start_location=jita, end_location=amamake, price_base=500000000
-                )
-
+            create_pricing(
+                start_location=jita, end_location=amamake, price_base=500000000
+            )
             Contract.objects.update_pricing()
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", "url")
@@ -897,27 +892,24 @@ class TestPricingManager(NoSocketsTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.jita, cls.amamake, cls.amarr = create_locations()
-
-        with DisconnectPricingSaveHandler():
-            cls.p1 = Pricing.objects.create(
-                start_location=cls.jita,
-                end_location=cls.amamake,
-                price_base=50000000,
-                is_default=True,
-            )
-            cls.p2 = Pricing.objects.create(
-                start_location=cls.jita, end_location=cls.amarr, price_base=10000000
-            )
+        cls.p1 = create_pricing(
+            start_location=cls.jita,
+            end_location=cls.amamake,
+            price_base=50000000,
+            is_default=True,
+        )
+        cls.p2 = create_pricing(
+            start_location=cls.jita, end_location=cls.amarr, price_base=10000000
+        )
 
     def test_default_pricing_no_default_defined(self):
         Pricing.objects.all().delete()
-        with DisconnectPricingSaveHandler():
-            p = Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=50000000,
-                is_default=True,
-            )
+        p = create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=50000000,
+            is_default=True,
+        )
         expected = p
         self.assertEqual(Pricing.objects.get_default(), expected)
 

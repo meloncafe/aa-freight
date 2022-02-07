@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.test.utils import override_settings
+from django.test import override_settings
 from esi.errors import TokenInvalidError
 
 from app_utils.testing import NoSocketsTestCase
@@ -80,11 +80,14 @@ class TestRunContractsSync(NoSocketsTestCase):
         self.assertTrue(mock_send_contract_notifications.si.called)
 
 
-@patch(MODULE_PATH + ".Contract.objects.update_pricing")
 class TestUpdateContractsPricing(NoSocketsTestCase):
-    def test_normal_run(self, mock_update_pricing):
-        update_contracts_pricing()
-        self.assertTrue(mock_update_pricing.called)
+    def test_normal_run(self):
+        # given
+        create_contract_handler_w_contracts([149409016])
+        # when
+        result = update_contracts_pricing()
+        # then
+        self.assertEqual(result, 1)
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)

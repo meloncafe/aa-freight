@@ -1,8 +1,9 @@
 import datetime as dt
 from unittest.mock import Mock, patch
 
-import grpc
 from dhooks_lite import Embed
+from discordproxy.exceptions import to_discord_proxy_exception
+from discordproxy.tests.factories import create_rpc_error
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -32,7 +33,6 @@ from ..models import (
     Location,
     Pricing,
 )
-from . import DisconnectPricingSaveHandler
 from .testdata import (
     characters_data,
     contracts_data,
@@ -40,6 +40,7 @@ from .testdata import (
     create_entities_from_characters,
     create_locations,
 )
+from .testdata.factories import create_pricing
 
 MODULE_PATH = "freight.models"
 PATCH_FREIGHT_OPERATION_MODE = MODULE_PATH + ".FREIGHT_OPERATION_MODE"
@@ -108,97 +109,92 @@ class TestPricing(NoSocketsTestCase):
         )
 
     def test_create_pricings(self):
-        with DisconnectPricingSaveHandler():
-            # first pricing
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-            )
-            # pricing with different route
-            Pricing.objects.create(
-                start_location=self.amarr,
-                end_location=self.amamake,
-                price_base=250000000,
-            )
-            # pricing with reverse route then pricing 1
-            Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=350000000,
-            )
+        # first pricing
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+        )
+        # pricing with different route
+        create_pricing(
+            start_location=self.amarr,
+            end_location=self.amamake,
+            price_base=250000000,
+        )
+        # pricing with reverse route then pricing 1
+        create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=350000000,
+        )
 
     def test_create_pricing_no_2nd_bidirectional_allowed(self):
-        with DisconnectPricingSaveHandler():
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-                is_bidirectional=True,
-            )
-            p = Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=500000000,
-                is_bidirectional=True,
-            )
-            with self.assertRaises(ValidationError):
-                p.clean()
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+            is_bidirectional=True,
+        )
+        p = create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=500000000,
+            is_bidirectional=True,
+        )
+        with self.assertRaises(ValidationError):
+            p.clean()
 
     def test_create_pricing_no_2nd_unidirectional_allowed(self):
-        with DisconnectPricingSaveHandler():
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-                is_bidirectional=True,
-            )
-            p = Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=500000000,
-                is_bidirectional=False,
-            )
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+            is_bidirectional=True,
+        )
+        p = create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=500000000,
+            is_bidirectional=False,
+        )
+        p.clean()
+        # this test case has been temporary inverted to allow users
+        # to migrate their pricings
+        """
+        with self.assertRaises(ValidationError):
             p.clean()
-            # this test case has been temporary inverted to allow users
-            # to migrate their pricings
-            """
-            with self.assertRaises(ValidationError):
-                p.clean()
-            """
+        """
 
     def test_create_pricing_2nd_must_be_unidirectional_a(self):
-        with DisconnectPricingSaveHandler():
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-                is_bidirectional=False,
-            )
-            p = Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=500000000,
-                is_bidirectional=True,
-            )
-            with self.assertRaises(ValidationError):
-                p.clean()
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+            is_bidirectional=False,
+        )
+        p = create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=500000000,
+            is_bidirectional=True,
+        )
+        with self.assertRaises(ValidationError):
+            p.clean()
 
     def test_create_pricing_2nd_ok_when_unidirectional(self):
-        with DisconnectPricingSaveHandler():
-            Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-                is_bidirectional=False,
-            )
-            p = Pricing.objects.create(
-                start_location=self.amamake,
-                end_location=self.jita,
-                price_base=500000000,
-                is_bidirectional=False,
-            )
-            p.clean()
+        create_pricing(
+            start_location=self.jita,
+            end_location=self.amamake,
+            price_base=500000000,
+            is_bidirectional=False,
+        )
+        p = create_pricing(
+            start_location=self.amamake,
+            end_location=self.jita,
+            price_base=500000000,
+            is_bidirectional=False,
+        )
+        p.clean()
 
     def test_name_uni_directional(self):
         p = Pricing(
@@ -488,12 +484,9 @@ class TestContract(NoSocketsTestCase):
 
     def setUp(self):
         # create contracts
-        with DisconnectPricingSaveHandler():
-            self.pricing = Pricing.objects.create(
-                start_location=self.jita,
-                end_location=self.amamake,
-                price_base=500000000,
-            )
+        self.pricing = create_pricing(
+            start_location=self.jita, end_location=self.amamake, price_base=500000000
+        )
         self.contract = Contract.objects.create(
             handler=self.handler,
             contract_id=1,
@@ -826,12 +819,16 @@ if "discord" in app_labels():
 
         @patch(MODULE_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", True)
         @patch(MODULE_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
-        @patch(MODULE_PATH + ".discord_api_pb2_grpc.DiscordApiStub")
-        def test_can_send_status_via_grpc(self, DiscordApiStub, mock_webhook_execute):
+        @patch(MODULE_PATH + ".DiscordClient", spec=True)
+        def test_can_send_status_via_grpc(
+            self, mock_DiscordClient, mock_webhook_execute
+        ):
             # when
             self.contract_1.send_customer_notification()
             # then
-            self.assertTrue(DiscordApiStub.return_value.SendDirectMessage.called)
+            self.assertTrue(
+                mock_DiscordClient.return_value.create_direct_message.called
+            )
             obj = self.contract_1.customer_notifications.get(
                 status=Contract.Status.OUTSTANDING
             )
@@ -841,16 +838,20 @@ if "discord" in app_labels():
 
         @patch(MODULE_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", True)
         @patch(MODULE_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
-        @patch(MODULE_PATH + ".discord_api_pb2_grpc.DiscordApiStub")
-        def test_can_handle_grpc_error(self, DiscordApiStub, mock_webhook_execute):
+        @patch(MODULE_PATH + ".DiscordClient", spec=True)
+        def test_can_handle_grpc_error(self, mock_DiscordClient, mock_webhook_execute):
             # given
-            my_exception = grpc.RpcError()
+            my_exception = to_discord_proxy_exception(create_rpc_error())
             my_exception.details = lambda: "{}"
-            DiscordApiStub.return_value.SendDirectMessage.side_effect = my_exception
+            mock_DiscordClient.return_value.create_direct_message.side_effect = (
+                my_exception
+            )
             # when
             self.contract_1.send_customer_notification()
             # then
-            self.assertTrue(DiscordApiStub.return_value.SendDirectMessage.called)
+            self.assertTrue(
+                mock_DiscordClient.return_value.create_direct_message.called
+            )
 
 
 class TestLocation(NoSocketsTestCase):
@@ -1038,8 +1039,9 @@ class TestContractsSync(NoSocketsTestCase):
     @patch(PATCH_FREIGHT_OPERATION_MODE, FREIGHT_OPERATION_MODE_MY_ALLIANCE)
     @patch(MODULE_PATH + ".Token")
     def test_abort_when_token_expired(self, mock_Token):
+        # given
         mock_Token.objects.filter.side_effect = TokenExpiredError()
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1047,10 +1049,10 @@ class TestContractsSync(NoSocketsTestCase):
             character=self.main_ownership,
             operation_mode=FREIGHT_OPERATION_MODE_MY_ALLIANCE,
         )
-
-        # run manager sync
-        self.assertFalse(handler.update_contracts_esi())
-
+        # when
+        result = handler.update_contracts_esi()
+        # then
+        self.assertFalse(result)
         handler.refresh_from_db()
         self.assertEqual(handler.last_error, ContractHandler.ERROR_TOKEN_EXPIRED)
 
@@ -1058,7 +1060,7 @@ class TestContractsSync(NoSocketsTestCase):
     @patch(MODULE_PATH + ".Token")
     def test_abort_when_token_invalid(self, mock_Token):
         mock_Token.objects.filter.side_effect = TokenInvalidError()
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1078,8 +1080,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = (
             None
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1119,8 +1120,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = Mock(
             spec=Token
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1146,8 +1146,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = Mock(
             spec=Token
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1199,8 +1198,7 @@ class TestContractsSync(NoSocketsTestCase):
             spec=Token
         )
         mock_notify.side_effect = RuntimeError
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1249,8 +1247,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = Mock(
             spec=Token
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1315,8 +1312,7 @@ class TestContractsSync(NoSocketsTestCase):
         mock_Token.objects.filter.return_value.require_scopes.return_value.require_valid.return_value.first.return_value = Mock(
             spec=Token
         )
-
-        AuthUtils.add_permission_to_user_by_name(
+        self.user = AuthUtils.add_permission_to_user_by_name(
             "freight.setup_contract_handler", self.user
         )
         handler = ContractHandler.objects.create(
@@ -1527,12 +1523,11 @@ class TestContractCustomerNotification(NoSocketsTestCase):
 
     def setUp(self):
         # create contracts
-        with DisconnectPricingSaveHandler():
-            self.pricing = Pricing.objects.create(
-                start_location=self.location_1,
-                end_location=self.location_2,
-                price_base=500000000,
-            )
+        self.pricing = create_pricing(
+            start_location=self.location_1,
+            end_location=self.location_2,
+            price_base=500000000,
+        )
         self.contract = Contract.objects.create(
             handler=self.handler,
             contract_id=1,

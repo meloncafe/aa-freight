@@ -9,8 +9,6 @@ FREIGHT_CONTRACT_SYNC_GRACE_MINUTES = clean_setting(
     "FREIGHT_CONTRACT_SYNC_GRACE_MINUTES", 30
 )
 
-# Enables features for developers, e.g. write access to all models in admin
-FREIGHT_DEVELOPER_MODE = clean_setting("FREIGHT_DEVELOPER_MODE", False)
 
 # Webhook URL used for notifications if defined
 FREIGHT_DISCORD_WEBHOOK_URL = clean_setting(

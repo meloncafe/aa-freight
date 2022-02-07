@@ -1,13 +1,13 @@
 import datetime
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.db import models
 from django.db.models import Count, Q, Sum
 from django.forms import HiddenInput
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
-from django.utils.html import format_html, mark_safe
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.html import format_html
 from django.utils.timezone import now
 from esi.decorators import token_required
 from esi.models import Token
@@ -16,22 +16,19 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
-from app_utils.messages import messages_plus
 
-from . import __title__, tasks
+from . import __title__, constants, tasks
 from .app_settings import (
     FREIGHT_APP_NAME,
     FREIGHT_OPERATION_MODE,
     FREIGHT_STATISTICS_MAX_DAYS,
 )
+from .forms import CalculatorForm
 from .models import Contract, ContractHandler, EveEntity, Freight, Location, Pricing
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
 ADD_LOCATION_TOKEN_TAG = "freight_add_location_token"
-CONTRACT_LIST_USER = "user"
-CONTRACT_LIST_ACTIVE = "active"
-CONTRACT_LIST_ALL = "all"
 
 
 def add_common_context(request, context: dict) -> dict:
@@ -54,7 +51,7 @@ def add_common_context(request, context: dict) -> dict:
 
 @login_required
 @permission_required("freight.basic_access")
-def index(request):
+def index(_):
     return redirect("freight:calculator")
 
 
@@ -64,11 +61,10 @@ def contract_list_user(request):
     try:
         user_name = request.user.profile.main_character.character_name
     except AttributeError:
-        user_name = request.user.user_name
-
+        user_name = request.user.username
     context = {
         "page_title": "My Contracts",
-        "category": CONTRACT_LIST_USER,
+        "category": constants.CONTRACT_LIST_USER,
         "user_name": user_name,
     }
     return render(
@@ -79,10 +75,7 @@ def contract_list_user(request):
 @login_required
 @permission_required("freight.view_contracts")
 def contract_list_all(request):
-    context = {
-        "page_title": "All Contracts",
-        "category": CONTRACT_LIST_ALL,
-    }
+    context = {"page_title": "All Contracts", "category": constants.CONTRACT_LIST_ALL}
     return render(
         request, "freight/contracts_all.html", add_common_context(request, context)
     )
@@ -90,14 +83,20 @@ def contract_list_all(request):
 
 @login_required
 @permission_required("freight.basic_access")
-def contract_list_data(request, category) -> JsonResponse:
+def contract_list_data(request, category: str) -> JsonResponse:
     """Return list of outstanding contracts for contract_list AJAX call."""
-
-    def character_format(obj):
-        return obj.character_name if obj else None
-
     contracts_data = list()
-    for contract in _contracts_for_contract_list(category, request):
+    contracts_qs = Contract.objects.select_related(
+        "acceptor",
+        "acceptor_corporation",
+        "end_location",
+        "issuer",
+        "start_location",
+        "pricing",
+        "pricing__start_location",
+        "pricing__end_location",
+    ).contract_list_filter(category=category, user=request.user)
+    for contract in contracts_qs:
         if contract.has_pricing:
             route_name = contract.pricing.name
             if not contract.has_pricing_errors:
@@ -149,6 +148,10 @@ def contract_list_data(request, category) -> JsonResponse:
             contract.end_location,
             contract.end_location.solar_system_name,
         )
+        try:
+            issuer_character_name = contract.issuer.character_name
+        except AttributeError:
+            issuer_character_name = None
         contracts_data.append(
             {
                 "contract_id": contract.contract_id,
@@ -166,7 +169,7 @@ def contract_list_data(request, category) -> JsonResponse:
                 "volume": contract.volume,
                 "date_issued": contract.date_issued.isoformat(),
                 "date_expired": contract.date_expired.isoformat(),
-                "issuer": character_format(contract.issuer),
+                "issuer": issuer_character_name,
                 "date_accepted": contract.date_accepted.isoformat()
                 if contract.date_accepted
                 else None,
@@ -180,52 +183,12 @@ def contract_list_data(request, category) -> JsonResponse:
                 "is_completed": contract.is_completed,
             }
         )
-    return JsonResponse(contracts_data, safe=False)
-
-
-def _contracts_for_contract_list(category, request) -> models.QuerySet:
-    """returns contracts corresponding to given category"""
-    contracts_qs = Contract.objects.select_related(
-        "acceptor",
-        "acceptor_corporation",
-        "end_location",
-        "issuer",
-        "start_location",
-        "pricing",
-        "pricing__start_location",
-        "pricing__end_location",
-    )
-    if category == CONTRACT_LIST_ACTIVE:
-        if not request.user.has_perm("freight.view_contracts"):
-            return contracts_qs.none()
-        return contracts_qs.filter(
-            status__in=[
-                Contract.Status.OUTSTANDING,
-                Contract.Status.IN_PROGRESS,
-            ]
-        ).exclude(date_expired__lt=now())
-    elif category == CONTRACT_LIST_ALL:
-        if not request.user.has_perm("freight.view_contracts"):
-            return contracts_qs.none()
-        return contracts_qs
-    elif category == CONTRACT_LIST_USER:
-        if not request.user.has_perm("freight.use_calculator"):
-            return contracts_qs.none()
-        return contracts_qs.issued_by_user(user=request.user).filter(
-            status__in=[
-                Contract.Status.OUTSTANDING,
-                Contract.Status.IN_PROGRESS,
-                Contract.Status.FINISHED,
-                Contract.Status.FAILED,
-            ]
-        )
-    raise ValueError("Invalid category: {}".format(category))
+    return JsonResponse({"data": contracts_data})
 
 
 @login_required
 @permission_required("freight.use_calculator")
 def calculator(request, pricing_pk=None):
-    from .forms import CalculatorForm
 
     if request.method != "POST":
         pricing = Pricing.objects.get_or_default(pricing_pk)
@@ -267,7 +230,6 @@ def calculator(request, pricing_pk=None):
     else:
         organization_name = None
         availability = None
-
     context = {
         "page_title": "Reward Calculator",
         "form": form,
@@ -290,13 +252,12 @@ def calculator(request, pricing_pk=None):
 @token_required(scopes=ContractHandler.get_esi_scopes())
 def setup_contract_handler(request, token):
     success = True
-    token_char = EveCharacter.objects.get(character_id=token.character_id)
-
+    token_char = get_object_or_404(EveCharacter, character_id=token.character_id)
     if (
         EveEntity.get_category_for_operation_mode(FREIGHT_OPERATION_MODE)
         == EveEntity.Category.ALLIANCE
     ) and token_char.alliance_id is None:
-        messages_plus.error(
+        messages.error(
             request,
             "Can not setup contract handler, "
             "because {} is not a member of any alliance".format(token_char),
@@ -310,14 +271,13 @@ def setup_contract_handler(request, token):
                 user=request.user, character=token_char
             )
         except CharacterOwnership.DoesNotExist:
-            messages_plus.error(
+            messages.error(
                 request,
-                mark_safe(
+                format_html(
                     "You can only use your main or alt characters to setup "
                     " the contract handler. "
-                    "However, character <strong>{}</strong> is neither. ".format(
-                        token_char.character_name
-                    )
+                    "However, character <strong>{}</strong> is neither. ",
+                    token_char.character_name,
                 ),
             )
             success = False
@@ -325,7 +285,7 @@ def setup_contract_handler(request, token):
     if success:
         handler = ContractHandler.objects.first()
         if handler and handler.operation_mode != FREIGHT_OPERATION_MODE:
-            messages_plus.error(
+            messages.error(
                 request,
                 "There already is a contract handler installed for a "
                 "different operation mode. You need to first delete the "
@@ -348,22 +308,20 @@ def setup_contract_handler(request, token):
             },
         )
         tasks.run_contracts_sync.delay(force_sync=True, user_pk=request.user.pk)
-        messages_plus.success(
+        messages.success(
             request,
-            mark_safe(
+            format_html(
                 "Contract Handler setup started for "
                 "<strong>{}</strong> organization "
                 "with <strong>{}</strong> as sync character. "
                 "Operation mode: <strong>{}</strong>. "
                 "Started syncing of courier contracts. "
-                "You will receive a report once it is completed.".format(
-                    organization.name,
-                    handler.character.character.character_name,
-                    handler.operation_mode_friendly,
-                )
+                "You will receive a report once it is completed.",
+                organization.name,
+                handler.character.character.character_name,
+                handler.operation_mode_friendly,
             ),
         )
-
     return redirect("freight:index")
 
 
@@ -382,12 +340,10 @@ def add_location_2(request):
 
     if ADD_LOCATION_TOKEN_TAG not in request.session:
         raise RuntimeError("Missing token in session")
-    else:
-        token = Token.objects.get(pk=request.session[ADD_LOCATION_TOKEN_TAG])
 
+    token = get_object_or_404(Token, pk=request.session[ADD_LOCATION_TOKEN_TAG])
     if request.method != "POST":
         form = AddLocationForm()
-
     else:
         form = AddLocationForm(request.POST)
         if form.is_valid():
@@ -396,24 +352,21 @@ def add_location_2(request):
                 location, created = Location.objects.update_or_create_from_esi(
                     token=token, location_id=location_id, add_unknown=False
                 )
-                action_txt = "Added:" if created else "Updated:"
-                messages_plus.success(
-                    request,
-                    mark_safe(
-                        "{} <strong>{}</strong>".format(action_txt, location.name)
-                    ),
-                )
-                return redirect("freight:add_location_2")
-
-            except Exception as ex:
-                messages_plus.error(
+            except OSError as ex:
+                messages.error(
                     request,
                     "Failed to add location with token from {} "
                     "for location ID {}: {}".format(
                         token.character_name, location_id, type(ex).__name__
                     ),
                 )
-
+            else:
+                action_txt = "Added:" if created else "Updated:"
+                messages.success(
+                    request,
+                    format_html("{} <strong>{}</strong>", action_txt, location.name),
+                )
+                return redirect("freight:add_location_2")
     context = {
         "page_title": "Add / Update Location",
         "form": form,
@@ -440,7 +393,6 @@ def statistics(request):
 @permission_required("freight.view_statistics")
 def statistics_routes_data(request):
     """returns totals for statistics as JSON"""
-
     cutoff_date = now() - datetime.timedelta(days=FREIGHT_STATISTICS_MAX_DAYS)
     finished_contracts = Q(contracts__status=Contract.Status.FINISHED) & Q(
         contracts__date_completed__gte=cutoff_date
@@ -464,35 +416,30 @@ def statistics_routes_data(request):
             )
         )
     )
-
-    totals = list()
-    for route in route_totals:
-        if route.contracts_count > 0:
-            totals.append(
-                {
-                    "name": route.name,
-                    "contracts": route.contracts_count,
-                    "rewards": route.rewards,
-                    "collaterals": route.collaterals,
-                    "volume": route.volume,
-                    "pilots": route.pilots,
-                    "customers": route.customers,
-                }
-            )
-
-    return JsonResponse(totals, safe=False)
+    totals = [
+        {
+            "name": route.name,
+            "contracts": route.contracts_count,
+            "rewards": route.rewards,
+            "collaterals": route.collaterals,
+            "volume": route.volume,
+            "pilots": route.pilots,
+            "customers": route.customers,
+        }
+        for route in route_totals
+        if route.contracts_count > 0
+    ]
+    return JsonResponse({"data": totals})
 
 
 @login_required
 @permission_required("freight.view_statistics")
 def statistics_pilots_data(request):
     """returns totals for statistics as JSON"""
-
     cutoff_date = now() - datetime.timedelta(days=FREIGHT_STATISTICS_MAX_DAYS)
     finished_contracts = Q(contracts_acceptor__status=Contract.Status.FINISHED) & Q(
         contracts_acceptor__date_completed__gte=cutoff_date
     )
-
     pilot_totals = (
         EveCharacter.objects.exclude(contracts_acceptor__isnull=True)
         .annotate(
@@ -504,29 +451,25 @@ def statistics_pilots_data(request):
         )
         .annotate(volume=Sum("contracts_acceptor__volume", filter=finished_contracts))
     )
-
-    totals = list()
-    for pilot in pilot_totals:
-        if pilot.contracts_count > 0:
-            totals.append(
-                {
-                    "name": pilot.character_name,
-                    "corporation": pilot.corporation_name,
-                    "contracts": pilot.contracts_count,
-                    "rewards": pilot.rewards,
-                    "collaterals": pilot.collaterals,
-                    "volume": pilot.volume,
-                }
-            )
-
-    return JsonResponse(totals, safe=False)
+    totals = [
+        {
+            "name": pilot.character_name,
+            "corporation": pilot.corporation_name,
+            "contracts": pilot.contracts_count,
+            "rewards": pilot.rewards,
+            "collaterals": pilot.collaterals,
+            "volume": pilot.volume,
+        }
+        for pilot in pilot_totals
+        if pilot.contracts_count > 0
+    ]
+    return JsonResponse({"data": totals})
 
 
 @login_required
 @permission_required("freight.view_statistics")
 def statistics_pilot_corporations_data(request):
     """returns totals for statistics as JSON"""
-
     cutoff_date = now() - datetime.timedelta(days=FREIGHT_STATISTICS_MAX_DAYS)
     finished_contracts = Q(
         contracts_acceptor_corporation__status=Contract.Status.FINISHED
@@ -556,7 +499,6 @@ def statistics_pilot_corporations_data(request):
             )
         )
     )
-
     totals = list()
     for corporation in corporation_totals:
         if corporation.contracts_count > 0:
@@ -573,15 +515,13 @@ def statistics_pilot_corporations_data(request):
                     "volume": corporation.volume,
                 }
             )
-
-    return JsonResponse(totals, safe=False)
+    return JsonResponse({"data": totals})
 
 
 @login_required
 @permission_required("freight.view_statistics")
 def statistics_customer_data(request):
     """returns totals for statistics as JSON"""
-
     cutoff_date = now() - datetime.timedelta(days=FREIGHT_STATISTICS_MAX_DAYS)
     finished_contracts = Q(contracts_issuer__status=Contract.Status.FINISHED) & Q(
         contracts_issuer__date_completed__gte=cutoff_date
@@ -595,7 +535,6 @@ def statistics_customer_data(request):
         )
         .annotate(volume=Sum("contracts_issuer__volume", filter=finished_contracts))
     )
-
     totals = list()
     for customer in customer_totals:
         if customer.contracts_count > 0:
@@ -609,5 +548,4 @@ def statistics_customer_data(request):
                     "volume": customer.volume,
                 }
             )
-
-    return JsonResponse(totals, safe=False)
+    return JsonResponse({"data": totals})

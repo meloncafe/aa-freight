@@ -2,42 +2,7 @@ import random
 import string
 from datetime import datetime, timedelta
 
-from django.db.models import signals
-
 from app_utils.datetime import dt_eveformat
-
-from ..models import Pricing
-from ..signals import pricing_save_handler
-
-
-class TempDisconnectSignal:
-    """Temporarily disconnect a model from a signal"""
-
-    def __init__(self, signal, receiver, sender, dispatch_uid=None):
-        self.signal = signal
-        self.receiver = receiver
-        self.sender = sender
-        self.dispatch_uid = dispatch_uid
-
-    def __enter__(self):
-        self.signal.disconnect(
-            receiver=self.receiver, sender=self.sender, dispatch_uid=self.dispatch_uid
-        )
-
-    def __exit__(self, type, value, traceback):
-        self.signal.connect(
-            receiver=self.receiver, sender=self.sender, dispatch_uid=self.dispatch_uid
-        )
-
-
-class DisconnectPricingSaveHandler(TempDisconnectSignal):
-    def __init__(self):
-        super().__init__(
-            signal=signals.post_save,
-            receiver=pricing_save_handler,
-            sender=Pricing,
-            dispatch_uid="id_update_contracts_pricing",
-        )
 
 
 def generate_token(

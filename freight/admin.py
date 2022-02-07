@@ -1,7 +1,7 @@
+from django.conf import settings
 from django.contrib import admin
 
 from . import tasks
-from .app_settings import FREIGHT_DEVELOPER_MODE
 from .models import (
     Contract,
     ContractCustomerNotification,
@@ -19,11 +19,8 @@ class LocationAdmin(admin.ModelAdmin):
     list_filter = ("category_id",)
     search_fields = ["name"]
     list_select_related = True
-
+    list_display_links = None
     actions = ["update_location"]
-
-    if not FREIGHT_DEVELOPER_MODE:
-        list_display_links = None
 
     def _category(self, obj):
         return obj.get_category_id_display()
@@ -34,17 +31,12 @@ class LocationAdmin(admin.ModelAdmin):
         return obj.solar_system_name
 
     def has_add_permission(self, request):
-        if FREIGHT_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return False
 
     def has_change_permission(self, request):
-        if FREIGHT_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return False
 
+    @admin.display(description="Update selected locations from ESI")
     def update_location(self, request, queryset):
         location_ids = list()
         for obj in queryset:
@@ -56,16 +48,6 @@ class LocationAdmin(admin.ModelAdmin):
             "Started updating {} locations. "
             "This can take a short while to complete.".format(len(location_ids)),
         )
-
-    update_location.short_description = "Update selected locations from ESI"
-
-
-if FREIGHT_DEVELOPER_MODE:
-
-    @admin.register(EveEntity)
-    class EveEntityAdmin(admin.ModelAdmin):
-        list_display = ("name", "category")
-        list_filter = ("category",)
 
 
 @admin.register(Pricing)
@@ -86,20 +68,17 @@ class PricingAdmin(admin.ModelAdmin):
     )
     list_select_related = True
 
+    @admin.display(boolean=True)
     def _bidirectional(self, obj):
         return obj.is_bidirectional
 
-    _bidirectional.boolean = True
-
+    @admin.display(boolean=True)
     def _active(self, obj):
         return obj.is_active
 
-    _active.boolean = True
-
+    @admin.display(boolean=True)
     def _default(self, obj):
         return obj.is_default
-
-    _default.boolean = True
 
 
 @admin.register(ContractHandler)
@@ -112,25 +91,21 @@ class ContractHandlerAdmin(admin.ModelAdmin):
         "_is_sync_ok",
     )
     actions = ("start_sync", "send_notifications", "update_pricing")
+    readonly_fields = (
+        "organization",
+        "character",
+        "operation_mode",
+        "version_hash",
+        "last_sync",
+        "last_error",
+    )
 
-    if not FREIGHT_DEVELOPER_MODE:
-        readonly_fields = (
-            "organization",
-            "character",
-            "operation_mode",
-            "version_hash",
-            "last_sync",
-            "last_error",
-        )
-
+    @admin.display(boolean=True, description="sync ok")
     def _is_sync_ok(self, obj):
         return obj.is_sync_ok
 
-    _is_sync_ok.boolean = True
-    _is_sync_ok.short_description = "sync ok"
-
+    @admin.display(description="Fetch contracts from Eve Online server")
     def start_sync(self, request, queryset):
-
         for obj in queryset:
             tasks.run_contracts_sync.delay(force_sync=True, user_pk=request.user.pk)
             text = "Started syncing contracts for: {} ".format(obj)
@@ -138,8 +113,7 @@ class ContractHandlerAdmin(admin.ModelAdmin):
 
             self.message_user(request, text)
 
-    start_sync.short_description = "Fetch contracts from Eve Online server"
-
+    @admin.display(description="Send notifications for outstanding contracts")
     def send_notifications(self, request, queryset):
 
         for obj in queryset:
@@ -148,18 +122,13 @@ class ContractHandlerAdmin(admin.ModelAdmin):
 
             self.message_user(request, text)
 
-    send_notifications.short_description = (
-        "Send notifications for outstanding contracts"
-    )
-
+    @admin.display(description="Update pricing info for all contracts")
     def update_pricing(self, request, queryset):
         del queryset
         tasks.update_contracts_pricing.delay()
         self.message_user(
             request, "Started updating pricing relations for all contracts"
         )
-
-    update_pricing.short_description = "Update pricing info for all contracts"
 
     def has_add_permission(self, request):
         return False
@@ -172,36 +141,45 @@ class ContractAdmin(admin.ModelAdmin):
         "status",
         "date_issued",
         "issuer",
+        "pricing",
         "_pilots_notified",
         "_customer_notified",
     ]
     list_filter = (
         "status",
         ("issuer", admin.RelatedOnlyFieldListFilter),
+        ("pricing", admin.RelatedOnlyFieldListFilter),
     )
     search_fields = ["issuer"]
-
-    list_select_related = True
-
+    list_select_related = (
+        "issuer",
+        "pricing",
+        "pricing__start_location",
+        "pricing__end_location",
+    )
     actions = ["send_pilots_notification", "send_customer_notification"]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.prefetch_related("customer_notifications")
 
+    @admin.display(boolean=True)
     def _pilots_notified(self, contract):
+        if contract.pricing_id is None:
+            return None
         return contract.date_notified is not None
 
-    _pilots_notified.boolean = True
-
     def _customer_notified(self, contract):
-        return ", ".join(
-            sorted(
-                [x.status for x in contract.customer_notifications.all()],
-                reverse=True,
-            )
-        )
+        if contract.pricing_id is None:
+            return "?"
+        notifications = [x.status for x in contract.customer_notifications.all()]
+        if not notifications:
+            return None
+        return ", ".join(sorted(notifications, reverse=True))
 
+    @admin.display(
+        description="Sent pilots notification for selected contracts to Discord"
+    )
     def send_pilots_notification(self, request, queryset):
         for obj in queryset:
             obj.send_pilot_notification()
@@ -212,10 +190,9 @@ class ContractAdmin(admin.ModelAdmin):
                 ),
             )
 
-    send_pilots_notification.short_description = (
-        "Sent pilots notification for selected contracts to Discord"
+    @admin.display(
+        description="Sent customer notification for selected contracts to Discord"
     )
-
     def send_customer_notification(self, request, queryset):
         for obj in queryset:
             obj.send_customer_notification(force_sent=True)
@@ -226,25 +203,30 @@ class ContractAdmin(admin.ModelAdmin):
                 ),
             )
 
-    send_customer_notification.short_description = (
-        "Sent customer notification for selected contracts to Discord"
-    )
-
     def has_add_permission(self, request):
-        if FREIGHT_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return False
 
     def has_change_permission(self, request, obj=None):
-        if FREIGHT_DEVELOPER_MODE:
-            return True
-        else:
-            return False
+        return False
 
 
-if FREIGHT_DEVELOPER_MODE:
+if settings.DEBUG:
 
     @admin.register(ContractCustomerNotification)
     class ContractCustomerNotificationAdmin(admin.ModelAdmin):
-        pass
+        def has_add_permission(self, *args, **kwargs):
+            return False
+
+        def has_change_permission(self, *args, **kwargs):
+            return False
+
+    @admin.register(EveEntity)
+    class EveEntityAdmin(admin.ModelAdmin):
+        list_display = ("name", "category")
+        list_filter = ("category",)
+
+        def has_add_permission(self, *args, **kwargs):
+            return False
+
+        def has_change_permission(self, *args, **kwargs):
+            return False

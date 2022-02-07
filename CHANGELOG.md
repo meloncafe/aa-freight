@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.6.0] - 2022-02-07
+
+## Added
+
+- Add copy&paste buttons for contract details (#38)
+- Showing pricing info for contracts on admin side
+- Debug logging when notifications can not be sent due to no matching pricing info for contacts
+
+## Changed
+
+- Dropped support for Python 3.6 & Django 3.1
+- Code overhaul
+- Use new discordproxy approach for sending message
+
+## Fixed
+
+- Squashed migrations manually to fix migration error (#31)
+
 ## [1.5.2] - 2021-12-06
 
 ## Changed

@@ -4,9 +4,9 @@ from datetime import timedelta
 from urllib.parse import urljoin
 
 import dhooks_lite
-import grpc
-from discordproxy import discord_api_pb2, discord_api_pb2_grpc
-from discordproxy.helpers import parse_error_details
+from discordproxy.client import DiscordClient
+from discordproxy.discord_api_pb2 import Embed
+from discordproxy.exceptions import DiscordProxyException
 from google.protobuf import json_format
 
 from django.conf import settings
@@ -122,10 +122,6 @@ class Location(models.Model):
 
     objects = LocationManager()
 
-    @classmethod
-    def get_esi_scopes(cls):
-        return ["esi-universe.read_structures.v1"]
-
     def __str__(self):
         return self.name
 
@@ -145,6 +141,10 @@ class Location(models.Model):
     @property
     def location_name(self):
         return self.name.rsplit("-", 1)[1].strip()
+
+    @classmethod
+    def get_esi_scopes(cls):
+        return ["esi-universe.read_structures.v1"]
 
 
 class Pricing(models.Model):
@@ -260,6 +260,19 @@ class Pricing(models.Model):
 
     objects = PricingManager()
 
+    class Meta:
+        unique_together = (("start_location", "end_location"),)
+
+    def save(self, update_contracts=True, *args, **kwargs) -> None:
+        super().save(*args, **kwargs)
+        if update_contracts:
+            self._update_contracts()
+
+    def _update_contracts(self):
+        from .tasks import update_contracts_pricing
+
+        update_contracts_pricing.delay()
+
     def __str__(self) -> str:
         return self.name
 
@@ -268,8 +281,44 @@ class Pricing(models.Model):
             self.__class__.__name__, self.pk, self.name_full
         )
 
-    class Meta:
-        unique_together = (("start_location", "end_location"),)
+    def clean(self):
+        if (
+            self.price_base is None
+            and self.price_min is None
+            and self.price_per_volume is None
+            and self.price_per_collateral_percent is None
+        ):
+            raise ValidationError("You must specify at least one price component")
+
+        if self.start_location_id and self.end_location_id:
+            if (
+                Pricing.objects.filter(
+                    start_location=self.end_location,
+                    end_location=self.start_location,
+                    is_bidirectional=True,
+                ).exists()
+                and self.is_bidirectional
+            ):
+                raise ValidationError(
+                    "There already exists a bidirectional pricing for this route. "
+                    "Please set this pricing to non-bidirectional to save it. "
+                    "And after you must also set the other pricing to "
+                    "non-bidirectional."
+                )
+
+            if (
+                Pricing.objects.filter(
+                    start_location=self.end_location,
+                    end_location=self.start_location,
+                    is_bidirectional=False,
+                ).exists()
+                and self.is_bidirectional
+            ):
+                raise ValidationError(
+                    "There already exists a non bidirectional pricing for "
+                    "this route. You need to mark this pricing as "
+                    "non-bidirectional too to continue."
+                )
 
     @property
     def name(self) -> str:
@@ -346,45 +395,6 @@ class Pricing(models.Model):
             and self.price_per_volume is None
             and self.price_per_collateral_percent is None
         )
-
-    def clean(self):
-        if (
-            self.price_base is None
-            and self.price_min is None
-            and self.price_per_volume is None
-            and self.price_per_collateral_percent is None
-        ):
-            raise ValidationError("You must specify at least one price component")
-
-        if self.start_location_id and self.end_location_id:
-            if (
-                Pricing.objects.filter(
-                    start_location=self.end_location,
-                    end_location=self.start_location,
-                    is_bidirectional=True,
-                ).exists()
-                and self.is_bidirectional
-            ):
-                raise ValidationError(
-                    "There already exists a bidirectional pricing for this route. "
-                    "Please set this pricing to non-bidirectional to save it. "
-                    "And after you must also set the other pricing to "
-                    "non-bidirectional."
-                )
-
-            if (
-                Pricing.objects.filter(
-                    start_location=self.end_location,
-                    end_location=self.start_location,
-                    is_bidirectional=False,
-                ).exists()
-                and self.is_bidirectional
-            ):
-                raise ValidationError(
-                    "There already exists a non bidirectional pricing for "
-                    "this route. You need to mark this pricing as "
-                    "non-bidirectional too to continue."
-                )
 
     def get_calculated_price(self, volume: float, collateral: float) -> float:
         """returns the calculated price for the given parameters"""
@@ -697,18 +707,18 @@ class ContractHandler(models.Model):
         except TokenInvalidError:
             logger.error("%s: Invalid token for fetching contracts", self)
             self.set_sync_status(self.ERROR_TOKEN_INVALID)
-            raise TokenInvalidError()
+            raise TokenInvalidError() from None
 
         except TokenExpiredError:
             logger.error("%s: Token expired for fetching contracts", self)
             self.set_sync_status(self.ERROR_TOKEN_EXPIRED)
-            raise TokenExpiredError()
+            raise TokenExpiredError() from None
 
         else:
             if not token:
                 logger.error("%s: No valid token found", self)
                 self.set_sync_status(self.ERROR_TOKEN_INVALID)
-                raise TokenInvalidError()
+                raise TokenInvalidError() from None
 
         return token
 
@@ -909,6 +919,20 @@ class Contract(models.Model):
         REVERSED = "reversed", "reversed"
 
         @classproperty
+        def completed(cls) -> set:
+            """Status representing a completed contract."""
+            return {
+                cls.FINISHED_ISSUER,
+                cls.FINISHED_CONTRACTOR,
+                cls.FINISHED_ISSUER,
+                cls.CANCELED,
+                cls.REJECTED,
+                cls.DELETED,
+                cls.FINISHED,
+                cls.FAILED,
+            }
+
+        @classproperty
         def for_customer_notification(cls) -> set:
             return {cls.OUTSTANDING, cls.IN_PROGRESS, cls.FINISHED, cls.FAILED}
 
@@ -987,6 +1011,12 @@ class Contract(models.Model):
 
     objects = ContractManager()
 
+    class Meta:
+        unique_together = (("handler", "contract_id"),)
+        indexes = [
+            models.Index(fields=["status"]),
+        ]
+
     def __str__(self) -> str:
         return "{}: {} -> {}".format(
             self.contract_id,
@@ -1002,25 +1032,10 @@ class Contract(models.Model):
             self.end_location.solar_system_name,
         )
 
-    class Meta:
-        unique_together = (("handler", "contract_id"),)
-        indexes = [
-            models.Index(fields=["status"]),
-        ]
-
     @property
     def is_completed(self) -> bool:
         """whether this contract is completed or active"""
-        return self.status in [
-            self.Status.FINISHED_ISSUER,
-            self.Status.FINISHED_CONTRACTOR,
-            self.Status.FINISHED_ISSUER,
-            self.Status.CANCELED,
-            self.Status.REJECTED,
-            self.Status.DELETED,
-            self.Status.FINISHED,
-            self.Status.FAILED,
-        ]
+        return self.status in self.Status.completed
 
     @property
     def is_in_progress(self) -> bool:
@@ -1231,7 +1246,6 @@ class Contract(models.Model):
                 "%s: Could not find matching user for issuer: %s", self, self.issuer
             )
             return
-
         try:
             discord_user_id = DiscordUser.objects.get(user=issuer_user).uid
         except DiscordUser.DoesNotExist:
@@ -1240,11 +1254,11 @@ class Contract(models.Model):
             )
             return
 
-        if FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL:
-            self._send_to_customer_via_webhook(status_to_report, discord_user_id)
-
         if FREIGHT_DISCORDPROXY_ENABLED:
-            self._send_to_customer_via_grpc(status_to_report, discord_user_id)
+            self._send_to_customer_via_discordproxy(status_to_report, discord_user_id)
+
+        elif FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL:
+            self._send_to_customer_via_webhook(status_to_report, discord_user_id)
 
     def _send_to_customer_via_webhook(self, status_to_report, discord_user_id):
         if FREIGHT_DISCORD_DISABLE_BRANDING:
@@ -1285,7 +1299,7 @@ class Contract(models.Model):
                 response.status_code,
             )
 
-    def _send_to_customer_via_grpc(self, status_to_report, discord_user_id):
+    def _send_to_customer_via_discordproxy(self, status_to_report, discord_user_id):
         logger.info(
             "%s: Trying to send customer notification "
             "about contract %s on status %s to discord dm",
@@ -1293,31 +1307,24 @@ class Contract(models.Model):
             self.contract_id,
             status_to_report,
         )
-        if not grpc:
-            logger.error("Discord Proxy not installed. Can not send direct messages.")
-            return
-
         embed_dct = self._generate_embed(for_issuer=True).asdict()
-        embed = json_format.ParseDict(embed_dct, discord_api_pb2.Embed())
+        embed = json_format.ParseDict(embed_dct, Embed())
         contents = self._generate_contents(
             discord_user_id, status_to_report, include_mention=False
         )
-        with grpc.insecure_channel(f"localhost:{FREIGHT_DISCORDPROXY_PORT}") as channel:
-            client = discord_api_pb2_grpc.DiscordApiStub(channel)
-            request = discord_api_pb2.SendDirectMessageRequest(
+        client = DiscordClient(target=f"localhost:{FREIGHT_DISCORDPROXY_PORT}")
+        try:
+            client.create_direct_message(
                 user_id=discord_user_id, content=contents, embed=embed
             )
-            try:
-                client.SendDirectMessage(request)
-            except grpc.RpcError as e:
-                details = parse_error_details(e)
-                logger.error("Failed to send message to Discord: %s", details)
-            else:
-                ContractCustomerNotification.objects.update_or_create(
-                    contract=self,
-                    status=status_to_report,
-                    defaults={"date_notified": now()},
-                )
+        except DiscordProxyException as ex:
+            logger.error("Failed to send message to Discord: %s", ex)
+        else:
+            ContractCustomerNotification.objects.update_or_create(
+                contract=self,
+                status=status_to_report,
+                defaults={"date_notified": now()},
+            )
 
     def _generate_contents(
         self, discord_user_id, status_to_report, include_mention=True

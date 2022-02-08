@@ -4,10 +4,6 @@ from datetime import timedelta
 from urllib.parse import urljoin
 
 import dhooks_lite
-from discordproxy.client import DiscordClient
-from discordproxy.discord_api_pb2 import Embed
-from discordproxy.exceptions import DiscordProxyException
-from google.protobuf import json_format
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -58,7 +54,16 @@ from .providers import esi
 
 if "discord" in app_labels():
     from allianceauth.services.modules.discord.models import DiscordUser
+else:
+    DiscordUser = None
 
+try:
+    from discordproxy.client import DiscordClient
+    from discordproxy.discord_api_pb2 import Embed
+    from discordproxy.exceptions import DiscordProxyException
+    from google.protobuf import json_format
+except ImportError:
+    DiscordClient = None
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -1219,7 +1224,7 @@ class Contract(models.Model):
         """
         if (
             FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL or FREIGHT_DISCORDPROXY_ENABLED
-        ) and "discord" in app_labels():
+        ) and DiscordUser:
             status_to_report = None
             for status in self.Status.for_customer_notification:
                 if self.status == status and (

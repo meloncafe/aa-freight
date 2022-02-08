@@ -2,8 +2,6 @@ import datetime as dt
 from unittest.mock import Mock, patch
 
 from dhooks_lite import Embed
-from discordproxy.exceptions import to_discord_proxy_exception
-from discordproxy.tests.factories import create_rpc_error
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -41,6 +39,20 @@ from .testdata import (
     create_locations,
 )
 from .testdata.factories import create_pricing
+
+if "discord" in app_labels():
+    from allianceauth.services.modules.discord.models import DiscordUser
+else:
+    DiscordUser = None
+
+try:
+    from discordproxy.client import DiscordClient
+    from discordproxy.exceptions import to_discord_proxy_exception
+    from discordproxy.tests.factories import create_rpc_error
+
+except ImportError:
+    pass
+
 
 MODULE_PATH = "freight.models"
 PATCH_FREIGHT_OPERATION_MODE = MODULE_PATH + ".FREIGHT_OPERATION_MODE"
@@ -630,9 +642,7 @@ class TestContractSendPilotNotification(NoSocketsTestCase):
         self.assertEqual(mock_webhook_execute.call_count, 1)
 
 
-if "discord" in app_labels():
-
-    from allianceauth.services.modules.discord.models import DiscordUser
+if DiscordUser:
 
     @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", spec=True)
     class TestContractSendCustomerNotification(NoSocketsTestCase):
@@ -709,11 +719,10 @@ if "discord" in app_labels():
 
         @patch(MODULE_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", False)
         @patch(MODULE_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", "url")
-        @patch(MODULE_PATH + ".app_labels")
-        def test_aborts_without_discord(self, mock_app_labels, mock_webhook_execute):
+        @patch(MODULE_PATH + ".DiscordUser", None)
+        def test_aborts_without_discord(self, mock_webhook_execute):
             # given
             mock_webhook_execute.return_value.status_ok = True
-            mock_app_labels.return_value = []
             # when
             self.contract_1.send_customer_notification()
             # then
@@ -817,12 +826,27 @@ if "discord" in app_labels():
             # then
             self.assertEqual(mock_webhook_execute.call_count, 0)
 
+
+if DiscordUser and DiscordClient:
+
+    class TestContractSendCustomerNotificationDiscordProxy(NoSocketsTestCase):
+        @classmethod
+        def setUpClass(cls):
+            super().setUpClass()
+            cls.handler, cls.user = create_contract_handler_w_contracts()
+            cls.character = cls.user.profile.main_character
+            cls.corporation = cls.character.corporation
+            cls.contract_1 = Contract.objects.get(contract_id=149409005)
+            cls.contract_2 = Contract.objects.get(contract_id=149409019)
+            cls.contract_3 = Contract.objects.get(contract_id=149409118)
+            cls.jita = Location.objects.get(id=60003760)
+            cls.amamake = Location.objects.get(id=1022167642188)
+            cls.amarr = Location.objects.get(id=60008494)
+
         @patch(MODULE_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", True)
         @patch(MODULE_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
         @patch(MODULE_PATH + ".DiscordClient", spec=True)
-        def test_can_send_status_via_grpc(
-            self, mock_DiscordClient, mock_webhook_execute
-        ):
+        def test_can_send_status_via_grpc(self, mock_DiscordClient):
             # when
             self.contract_1.send_customer_notification()
             # then
@@ -839,7 +863,7 @@ if "discord" in app_labels():
         @patch(MODULE_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", True)
         @patch(MODULE_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
         @patch(MODULE_PATH + ".DiscordClient", spec=True)
-        def test_can_handle_grpc_error(self, mock_DiscordClient, mock_webhook_execute):
+        def test_can_handle_grpc_error(self, mock_DiscordClient):
             # given
             my_exception = to_discord_proxy_exception(create_rpc_error())
             my_exception.details = lambda: "{}"

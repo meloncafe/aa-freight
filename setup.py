@@ -44,6 +44,5 @@ setup(
         "allianceauth-app-utils>=1.10",
         "dhooks-lite>=0.5.0",
         "django-navhelper",
-        "discordproxy>=0.5",
     ],
 )

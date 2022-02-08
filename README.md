@@ -146,7 +146,7 @@ That's it. The Freight app is fully installed and ready to be used.
 
 ### 8 - Setup Discord Proxy (optional)
 
-If you want Freight to send contract updates as direct messages to your users you need to have [Discord Proxy](https://gitlab.com/ErikKalkoken/discordproxy) running.
+If you want Freight to send contract updates as direct messages to your users you need to have [Discord Proxy](https://gitlab.com/ErikKalkoken/discordproxy) running. You also need to have Discord Proxy installed in the same Python venv like Freight.
 
 Once Discord Proxy is running just set `FREIGHT_DISCORDPROXY_ENABLED = True` in your local settings to enable this feature.
 

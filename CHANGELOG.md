@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.6.1] - 2022-02-08
+
+## Changed
+
+- Changing Discord Proxy to an optional dependency, so Freight can be installed and used without it if needed.
+
 ## [1.6.0] - 2022-02-07
 
 ## Added

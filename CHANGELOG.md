@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.6.2] - 2022-03-02
+
+## Changed
+
+- Updated dependencies for AA 3 compatibility
+
+## Fixed
+
+- Test with sessions do not work under Django 4
+
 ## [1.6.1] - 2022-02-08
 
 ## Changed

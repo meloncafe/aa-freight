@@ -502,7 +502,7 @@ class TestAddLocation(TestCase):
             reverse("freight:add_location_2"), data={"location_id": location_id}
         )
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(Mock())
         middleware.process_request(request)
         request.session[views.ADD_LOCATION_TOKEN_TAG] = token.pk
         request.session.save()
@@ -538,7 +538,7 @@ class TestAddLocation(TestCase):
             reverse("freight:add_location_2"), data={"location_id": location_id}
         )
         request.user = self.user
-        middleware = SessionMiddleware()
+        middleware = SessionMiddleware(Mock())
         middleware.process_request(request)
         request.session[views.ADD_LOCATION_TOKEN_TAG] = token.pk
         request.session.save()

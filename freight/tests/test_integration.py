@@ -47,11 +47,7 @@ class TestCalculatorWeb(WebTest):
         self.app.set_user(self.user)
         # load page and get our form
         response = self.app.get(reverse("freight:calculator"))
-        form = None
-        for _, obj in response.forms.items():
-            if obj.id == "form_calculator":
-                form = obj
-        self.assertIsNotNone(form)
+        form = response.forms["form_calculator"]
 
         # enter these values into form
         form["pricing"] = pricing.pk
@@ -62,11 +58,7 @@ class TestCalculatorWeb(WebTest):
 
         # submit form and get response
         response = form.submit()
-        form = None
-        for _, obj in response.forms.items():
-            if obj.id == "form_calculator":
-                form = obj
-        self.assertIsNotNone(form)
+        form = response.forms["form_calculator"]
 
         # extract the price string
         price_str = response.html.find(id="text_price_2").string.strip()

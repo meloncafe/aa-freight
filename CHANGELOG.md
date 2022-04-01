@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.6.3] - 2022-04-01
+
+## Fixed
+
+- Technical error when trying to calculate with an empty form
+
 ## [1.6.2] - 2022-03-02
 
 ## Changed

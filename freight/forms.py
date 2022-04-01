@@ -31,21 +31,25 @@ class CalculatorForm(forms.Form):
     )
 
     def clean(self):
-        pricing = self.cleaned_data["pricing"]
-        issue_prefix = "⚠ Issues:"
+        pricing = self.cleaned_data.get("pricing")
+        if pricing:
+            issue_prefix = "⚠ Issues:"
 
-        if pricing.requires_volume() and self.cleaned_data["volume"] is None:
-            raise ValidationError("{} volume is required".format(issue_prefix))
+            if pricing.requires_volume() and self.cleaned_data["volume"] is None:
+                raise ValidationError("{} volume is required".format(issue_prefix))
 
-        if pricing.requires_collateral() and self.cleaned_data["collateral"] is None:
-            raise ValidationError("{} collateral is required".format(issue_prefix))
+            if (
+                pricing.requires_collateral()
+                and self.cleaned_data["collateral"] is None
+            ):
+                raise ValidationError("{} collateral is required".format(issue_prefix))
 
-        volume = self.cleaned_data["volume"]
-        collateral = self.cleaned_data["collateral"]
-        issues = pricing.get_contract_price_check_issues(volume, collateral)
+            volume = self.cleaned_data["volume"]
+            collateral = self.cleaned_data["collateral"]
+            issues = pricing.get_contract_price_check_issues(volume, collateral)
 
-        if issues:
-            raise ValidationError("{} {}".format(issue_prefix, ", ".join(issues)))
+            if issues:
+                raise ValidationError("{} {}".format(issue_prefix, ", ".join(issues)))
 
     def get_calculated_data(self, pricing: object) -> tuple:
         if self.is_valid():

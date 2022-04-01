@@ -189,7 +189,6 @@ def contract_list_data(request, category: str) -> JsonResponse:
 @login_required
 @permission_required("freight.use_calculator")
 def calculator(request, pricing_pk=None):
-
     if request.method != "POST":
         pricing = Pricing.objects.get_or_default(pricing_pk)
         form = CalculatorForm(initial={"pricing": pricing})
@@ -199,7 +198,8 @@ def calculator(request, pricing_pk=None):
     else:
         form = CalculatorForm(request.POST)
         request.POST._mutable = True
-        pricing = Pricing.objects.get_or_default(form.data["pricing"])
+        pricing_pk = form.data.get("pricing")
+        pricing = Pricing.objects.get_or_default(pricing_pk)
         volume, collateral, price = form.get_calculated_data(pricing)
 
     if pricing:

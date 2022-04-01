@@ -112,6 +112,27 @@ class TestCalculatorWeb(WebTest):
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
+class TestCalculatorWeb2(WebTest):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        _, cls.user = create_contract_handler_w_contracts()
+        cls.user = AuthUtils.add_permission_to_user_by_name(
+            "freight.use_calculator", cls.user
+        )
+
+    def test_can_handle_no_pricing(self):
+        # given
+        self.app.set_user(self.user)
+        response = self.app.get(reverse("freight:calculator"))
+        form = response.forms["form_calculator"]
+        # when
+        response = form.submit()
+        # then
+        self.assertIn("This field is required", response.text)
+
+
+@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 class TestPricingSave(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):

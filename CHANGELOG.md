@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## Changed
 
 - Deploy wheel to PyPI
+- Switch to local SWAGGER spec file
 
 ## [1.6.3] - 2022-04-01
 

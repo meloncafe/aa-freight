@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.6.5] - 2022-07-19
+
+## Changed
+
+- filterDropDown compatibility fix for AA3 (!11)
+
 ## [1.6.4] - 2022-06-16
 
 ## Changed

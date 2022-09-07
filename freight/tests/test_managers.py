@@ -115,38 +115,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         )
 
         with self.assertRaises(ObjectNotFound):
-            entity, _ = EveEntity.objects.get_or_create_esi(id=666)
-
-    def test_can_create_corporation_from_evecharacter(self):
-        corporation, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            self.character, category=EveEntity.CATEGORY_CORPORATION
-        )
-        self.assertEqual(int(corporation.id), 92000001)
-
-    def test_can_create_alliance_from_evecharacter(self):
-        alliance, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            self.character, category=EveEntity.CATEGORY_ALLIANCE
-        )
-        self.assertEqual(int(alliance.id), 93000001)
-
-    def test_can_create_character_alliance_from_evecharacter(self):
-        char2, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            self.character, category=EveEntity.CATEGORY_CHARACTER
-        )
-        self.assertEqual(int(char2.id), 90000001)
-
-    def test_raises_exception_when_trying_to_create_alliance_from_non_member(self):
-        character = EveCharacter.objects.get(character_id=90000005)
-        with self.assertRaises(ValueError):
-            EveEntity.objects.update_or_create_from_evecharacter(
-                character, category=EveEntity.CATEGORY_ALLIANCE
-            )
-
-    def test_raises_exception_when_trying_to_create_invalid_category_from_evechar(self):
-        with self.assertRaises(ValueError):
-            EveEntity.objects.update_or_create_from_evecharacter(
-                self.character, category="xxx"
-            )
+            EveEntity.objects.get_or_create_esi(id=666)
 
 
 def get_universe_stations_station_id(*args, **kwargs) -> dict:

@@ -141,40 +141,6 @@ class EveEntityManager(models.Manager):
             },
         )
 
-    def update_or_create_from_evecharacter(
-        self, character: EveCharacter, category: str
-    ) -> Tuple[models.Model, bool]:
-        """updates or creates EveEntity object from an EveCharacter object"""
-        from .models import EveEntity
-
-        if category == EveEntity.CATEGORY_ALLIANCE:
-            if not character.alliance_id:
-                raise ValueError("character is not an alliance member")
-            return self.update_or_create(
-                id=character.alliance_id,
-                defaults={
-                    "name": character.alliance_name,
-                    "category": EveEntity.CATEGORY_ALLIANCE,
-                },
-            )
-        elif category == EveEntity.CATEGORY_CORPORATION:
-            return self.update_or_create(
-                id=character.corporation_id,
-                defaults={
-                    "name": character.corporation_name,
-                    "category": EveEntity.CATEGORY_CORPORATION,
-                },
-            )
-        elif category == EveEntity.CATEGORY_CHARACTER:
-            return self.update_or_create(
-                id=character.character_id,
-                defaults={
-                    "name": character.character_name,
-                    "category": EveEntity.CATEGORY_CHARACTER,
-                },
-            )
-        raise ValueError("Invalid category: {}".format(category))
-
 
 class ContractQuerySet(models.QuerySet):
     def pending_count(self) -> int:

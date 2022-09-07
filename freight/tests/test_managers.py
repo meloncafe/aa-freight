@@ -796,7 +796,7 @@ if "discord" in app_labels():
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
         @patch(MODELS_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", False)
         def test_send_pilot_notifications_normal(self, mock_webhook_execute):
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 8)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", "url")
@@ -811,7 +811,7 @@ if "discord" in app_labels():
             Contract.objects.all().exclude(pk=x.pk).delete()
             x.date_expired = now() - timedelta(hours=1)
             x.save()
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 0)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", "url")
@@ -824,11 +824,11 @@ if "discord" in app_labels():
             Contract.objects.all().exclude(pk=x.pk).delete()
 
             # round #1
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 1)
 
             # round #2
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 1)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", None)
@@ -840,7 +840,7 @@ if "discord" in app_labels():
         def test_dont_send_any_notifications_when_no_url_if_set(
             self, mock_webhook_execute
         ):
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 0)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", None)
@@ -849,7 +849,7 @@ if "discord" in app_labels():
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", "url")
         @patch(MODELS_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", False)
         def test_send_customer_notifications_normal(self, mock_webhook_execute):
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 12)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", None)
@@ -864,7 +864,7 @@ if "discord" in app_labels():
             Contract.objects.all().exclude(pk=x.pk).delete()
             x.date_expired = now() - timedelta(hours=1)
             x.save()
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 0)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", None)
@@ -879,11 +879,11 @@ if "discord" in app_labels():
             Contract.objects.all().exclude(pk=x.pk).delete()
 
             # round #1
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 1)
 
             # round #2
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 1)
 
 

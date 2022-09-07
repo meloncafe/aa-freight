@@ -584,7 +584,7 @@ class ContractHandler(models.Model):
         (ERROR_ESI_UNAVAILABLE, "ESI API is currently unavailable"),
         (
             ERROR_OPERATION_MODE_MISMATCH,
-            "Operaton mode does not match with current setting",
+            "Operation mode does not match with current setting",
         ),
         (ERROR_UNKNOWN, "Unknown error"),
     ]
@@ -609,7 +609,7 @@ class ContractHandler(models.Model):
         default=None,
         null=True,
         blank=True,
-        help_text=("global modifier for price per volume in percent, e.g. 2.5 = +2.5%"),
+        help_text="global modifier for price per volume in percent, e.g. 2.5 = +2.5%",
     )
     version_hash = models.CharField(
         max_length=32,
@@ -624,7 +624,7 @@ class ContractHandler(models.Model):
     last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
-        help_text="error that occurred at the last sync atttempt (if any)",
+        help_text="error that occurred at the last sync attempt (if any)",
     )
 
     def __str__(self):

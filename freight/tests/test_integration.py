@@ -5,9 +5,10 @@ from django_webtest import WebTest
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.testing import NoSocketsTestCase
 
-from ..models import Contract, Location, Pricing
-from .testdata import create_contract_handler_w_contracts
+from freight.models import Contract, Location, Pricing
+
 from .testdata.factories import create_pricing
+from .testdata.helpers import create_contract_handler_w_contracts
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
@@ -116,12 +117,11 @@ class TestCalculatorWeb2(WebTest):
     def test_can_handle_no_pricing(self):
         # given
         self.app.set_user(self.user)
-        response = self.app.get(reverse("freight:calculator"))
-        form = response.forms["form_calculator"]
         # when
-        response = form.submit()
+        response = self.app.get(reverse("freight:calculator"))
         # then
-        self.assertIn("This field is required", response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Please define a pricing/route!", response.text)
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)

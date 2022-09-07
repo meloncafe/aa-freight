@@ -15,23 +15,18 @@ from app_utils.testing import (
     NoSocketsTestCase,
     add_character_to_user_2,
     add_new_token,
+    generate_invalid_pk,
 )
 
-from ..app_settings import (
-    FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE,
-    FREIGHT_OPERATION_MODE_CORP_PUBLIC,
-    FREIGHT_OPERATION_MODE_MY_ALLIANCE,
-    FREIGHT_OPERATION_MODE_MY_CORPORATION,
-)
-from ..models import Contract, EveEntity, Location, Pricing
-from . import get_invalid_object_pk
-from .testdata import (
+from freight.models import Contract, EveEntity, Location, Pricing
+
+from .testdata.factories import create_pricing
+from .testdata.helpers import (
     characters_data,
     create_contract_handler_w_contracts,
     create_locations,
     structures_data,
 )
-from .testdata.factories import create_pricing
 
 MANAGERS_PATH = "freight.managers"
 MODELS_PATH = "freight.models"
@@ -45,17 +40,17 @@ class TestEveEntityManager(NoSocketsTestCase):
         for character in characters_data:
             esi_data[character["character_id"]] = {
                 "id": character["character_id"],
-                "category": EveEntity.Category.CHARACTER,
+                "category": EveEntity.CATEGORY_CHARACTER,
                 "name": character["character_name"],
             }
             esi_data[character["corporation_id"]] = {
                 "id": character["corporation_id"],
-                "category": EveEntity.Category.CORPORATION,
+                "category": EveEntity.CATEGORY_CORPORATION,
                 "name": character["corporation_name"],
             }
             esi_data[character["alliance_id"]] = {
                 "id": character["alliance_id"],
-                "category": EveEntity.Category.ALLIANCE,
+                "category": EveEntity.CATEGORY_ALLIANCE,
                 "name": character["alliance_name"],
             }
             EveCharacter.objects.create(**character)
@@ -84,7 +79,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         self.assertTrue(created)
         self.assertEqual(obj.id, 90000001)
         self.assertEqual(obj.name, "Bruce Wayne")
-        self.assertEqual(obj.category, EveEntity.Category.CHARACTER)
+        self.assertEqual(obj.category, EveEntity.CATEGORY_CHARACTER)
 
     @patch(MANAGERS_PATH + ".esi")
     def test_can_create_entity_when_not_found(self, mock_esi):
@@ -96,7 +91,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         self.assertTrue(created)
         self.assertEqual(obj.id, 90000001)
         self.assertEqual(obj.name, "Bruce Wayne")
-        self.assertEqual(obj.category, EveEntity.Category.CHARACTER)
+        self.assertEqual(obj.category, EveEntity.CATEGORY_CHARACTER)
 
     @patch(MANAGERS_PATH + ".esi")
     def test_can_update_entity(self, mock_esi):
@@ -105,13 +100,13 @@ class TestEveEntityManager(NoSocketsTestCase):
         )
         obj, _ = EveEntity.objects.update_or_create_from_esi(id=90000001)
         obj.name = "Blue Company"
-        obj.category = EveEntity.Category.CORPORATION
+        obj.category = EveEntity.CATEGORY_CORPORATION
 
         obj, created = EveEntity.objects.update_or_create_from_esi(id=90000001)
         self.assertFalse(created)
         self.assertEqual(obj.id, 90000001)
         self.assertEqual(obj.name, "Bruce Wayne")
-        self.assertEqual(obj.category, EveEntity.Category.CHARACTER)
+        self.assertEqual(obj.category, EveEntity.CATEGORY_CHARACTER)
 
     @patch(MANAGERS_PATH + ".esi")
     def test_raise_exception_if_entity_can_not_be_created(self, mock_esi):
@@ -122,47 +117,21 @@ class TestEveEntityManager(NoSocketsTestCase):
         with self.assertRaises(ObjectNotFound):
             entity, _ = EveEntity.objects.get_or_create_from_esi(id=666)
 
-    def test_can_return_category_for_operation_mode(self):
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_MY_ALLIANCE
-            ),
-            EveEntity.Category.ALLIANCE,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_MY_CORPORATION
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_CORP_PUBLIC
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-
     def test_can_create_corporation_from_evecharacter(self):
         corporation, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            self.character, category=EveEntity.Category.CORPORATION
+            self.character, category=EveEntity.CATEGORY_CORPORATION
         )
         self.assertEqual(int(corporation.id), 92000001)
 
     def test_can_create_alliance_from_evecharacter(self):
         alliance, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            self.character, category=EveEntity.Category.ALLIANCE
+            self.character, category=EveEntity.CATEGORY_ALLIANCE
         )
         self.assertEqual(int(alliance.id), 93000001)
 
     def test_can_create_character_alliance_from_evecharacter(self):
         char2, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            self.character, category=EveEntity.Category.CHARACTER
+            self.character, category=EveEntity.CATEGORY_CHARACTER
         )
         self.assertEqual(int(char2.id), 90000001)
 
@@ -170,7 +139,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         character = EveCharacter.objects.get(character_id=90000005)
         with self.assertRaises(ValueError):
             EveEntity.objects.update_or_create_from_evecharacter(
-                character, category=EveEntity.Category.ALLIANCE
+                character, category=EveEntity.CATEGORY_ALLIANCE
             )
 
     def test_raises_exception_when_trying_to_create_invalid_category_from_evechar(self):
@@ -698,7 +667,7 @@ class TestContractManagerCreateFromDict(NoSocketsTestCase):
 
         mock_create_character.side_effect = create_character
         EveEntity.objects.create(
-            id=90000987, name="Dummy", category=EveEntity.Category.CHARACTER
+            id=90000987, name="Dummy", category=EveEntity.CATEGORY_CHARACTER
         )
         contract_dict = {
             "acceptor_id": 90000987,
@@ -739,7 +708,7 @@ class TestContractManagerCreateFromDict(NoSocketsTestCase):
     def test_sets_acceptor_to_none_if_it_cant_be_created(self, mock_create_character):
         mock_create_character.side_effect = RuntimeError
         EveEntity.objects.create(
-            id=90000987, name="Dummy", category=EveEntity.Category.CHARACTER
+            id=90000987, name="Dummy", category=EveEntity.CATEGORY_CHARACTER
         )
         contract_dict = {
             "acceptor_id": 90000987,
@@ -796,7 +765,7 @@ if "discord" in app_labels():
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
         @patch(MODELS_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", False)
         def test_send_pilot_notifications_normal(self, mock_webhook_execute):
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 8)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", "url")
@@ -811,7 +780,7 @@ if "discord" in app_labels():
             Contract.objects.all().exclude(pk=x.pk).delete()
             x.date_expired = now() - timedelta(hours=1)
             x.save()
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 0)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", "url")
@@ -824,11 +793,11 @@ if "discord" in app_labels():
             Contract.objects.all().exclude(pk=x.pk).delete()
 
             # round #1
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 1)
 
             # round #2
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 1)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", None)
@@ -840,7 +809,7 @@ if "discord" in app_labels():
         def test_dont_send_any_notifications_when_no_url_if_set(
             self, mock_webhook_execute
         ):
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 0)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", None)
@@ -849,7 +818,7 @@ if "discord" in app_labels():
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", "url")
         @patch(MODELS_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", False)
         def test_send_customer_notifications_normal(self, mock_webhook_execute):
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 12)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", None)
@@ -864,7 +833,7 @@ if "discord" in app_labels():
             Contract.objects.all().exclude(pk=x.pk).delete()
             x.date_expired = now() - timedelta(hours=1)
             x.save()
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 0)
 
         @patch(MANAGERS_PATH + ".FREIGHT_DISCORD_WEBHOOK_URL", None)
@@ -879,11 +848,11 @@ if "discord" in app_labels():
             Contract.objects.all().exclude(pk=x.pk).delete()
 
             # round #1
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 1)
 
             # round #2
-            Contract.objects.send_notifications(rate_limted=False)
+            Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 1)
 
 
@@ -928,7 +897,7 @@ class TestPricingManager(NoSocketsTestCase):
 
     def test_get_or_default_not_found(self):
         expected = self.p1
-        invalid_pk = get_invalid_object_pk(Pricing)
+        invalid_pk = generate_invalid_pk(Pricing)
         self.assertEqual(Pricing.objects.get_or_default(invalid_pk), expected)
 
     def test_get_or_default_with_none(self):

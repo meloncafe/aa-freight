@@ -22,18 +22,17 @@ class LocationAdmin(admin.ModelAdmin):
     list_display_links = None
     actions = ["update_location"]
 
+    @admin.display(ordering="category_id")
     def _category(self, obj):
         return obj.get_category_id_display()
-
-    _category.admin_order_field = "category_id"
 
     def _solar_system(self, obj):
         return obj.solar_system_name
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, *args, **kwargs):
         return False
 
-    def has_change_permission(self, request):
+    def has_change_permission(self, *args, **kwargs):
         return False
 
     @admin.display(description="Update selected locations from ESI")
@@ -45,8 +44,10 @@ class LocationAdmin(admin.ModelAdmin):
         update_locations.delay(location_ids)
         self.message_user(
             request,
-            "Started updating {} locations. "
-            "This can take a short while to complete.".format(len(location_ids)),
+            (
+                f"Started updating {len(location_ids)} locations. "
+                "This can take a short while to complete."
+            ),
         )
 
 
@@ -108,18 +109,17 @@ class ContractHandlerAdmin(admin.ModelAdmin):
     def start_sync(self, request, queryset):
         for obj in queryset:
             tasks.run_contracts_sync.delay(force_sync=True, user_pk=request.user.pk)
-            text = "Started syncing contracts for: {} ".format(obj)
-            text += "You will receive a report once it is completed."
-
+            text = (
+                f"Started syncing contracts for: {obj} "
+                "You will receive a report once it is completed."
+            )
             self.message_user(request, text)
 
     @admin.display(description="Send notifications for outstanding contracts")
     def send_notifications(self, request, queryset):
-
         for obj in queryset:
             tasks.send_contract_notifications.delay(force_sent=True)
-            text = "Started sending notifications for: {} ".format(obj)
-
+            text = f"Started sending notifications for: {obj} "
             self.message_user(request, text)
 
     @admin.display(description="Update pricing info for all contracts")
@@ -130,7 +130,7 @@ class ContractHandlerAdmin(admin.ModelAdmin):
             request, "Started updating pricing relations for all contracts"
         )
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, *args, **kwargs):
         return False
 
 
@@ -185,9 +185,7 @@ class ContractAdmin(admin.ModelAdmin):
             obj.send_pilot_notification()
             self.message_user(
                 request,
-                "Sent pilots notification for contract {} to Discord".format(
-                    obj.contract_id
-                ),
+                f"Sent pilots notification for contract {obj.contract_id} to Discord",
             )
 
     @admin.display(
@@ -198,15 +196,13 @@ class ContractAdmin(admin.ModelAdmin):
             obj.send_customer_notification(force_sent=True)
             self.message_user(
                 request,
-                "Sent customer notification for contract {} to Discord".format(
-                    obj.contract_id
-                ),
+                f"Sent customer notification for contract {obj.contract_id} to Discord",
             )
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, *args, **kwargs):
         return False
 
-    def has_change_permission(self, request, obj=None):
+    def has_change_permission(self, *args, **kwargs):
         return False
 
 

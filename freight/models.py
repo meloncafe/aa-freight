@@ -49,6 +49,7 @@ from .app_settings import (
     FREIGHT_OPERATION_MODE_MY_CORPORATION,
     FREIGHT_OPERATION_MODES,
 )
+from .constants import AVATAR_SIZE
 from .managers import ContractManager, EveEntityManager, LocationManager, PricingManager
 from .providers import esi
 
@@ -89,8 +90,14 @@ class Freight(models.Model):
         msg = [(x, y) for x, y in FREIGHT_OPERATION_MODES if x == operation_mode]
         if len(msg) != 1:
             raise ValueError("Undefined mode")
-        else:
-            return msg[0][1]
+        return msg[0][1]
+
+    @staticmethod
+    def category_for_operation_mode(mode: str) -> str:
+        """Eve Entity category for given operation mode."""
+        if mode == FREIGHT_OPERATION_MODE_MY_ALLIANCE:
+            return EveEntity.CATEGORY_ALLIANCE
+        return EveEntity.CATEGORY_CORPORATION
 
 
 class Location(models.Model):
@@ -501,6 +508,16 @@ class Pricing(models.Model):
 class EveEntity(models.Model):
     """An Eve entity like a corporation or a character"""
 
+    CATEGORY_ALLIANCE = "alliance"
+    CATEGORY_CHARACTER = "character"
+    CATEGORY_CORPORATION = "corporation"
+
+    CATEGORY_CHOICES = (
+        (CATEGORY_ALLIANCE, "Alliance"),
+        (CATEGORY_CORPORATION, "Corporation"),
+        (CATEGORY_CHARACTER, "Character"),
+    )
+
     class Category(models.TextChoices):
         """entity categories supported by this class"""
 
@@ -508,10 +525,8 @@ class EveEntity(models.Model):
         CORPORATION = "corporation", "Corporation"
         CHARACTER = "character", "Character"
 
-    AVATAR_SIZE = 128
-
     id = models.IntegerField(primary_key=True, validators=[MinValueValidator(0)])
-    category = models.CharField(max_length=32, choices=Category.choices)
+    category = models.CharField(max_length=32, choices=CATEGORY_CHOICES)
     name = models.CharField(max_length=254)
 
     objects = EveEntityManager()
@@ -526,40 +541,27 @@ class EveEntity(models.Model):
 
     @property
     def is_alliance(self) -> bool:
-        return self.category == self.Category.ALLIANCE
+        return self.category == self.CATEGORY_ALLIANCE
 
     @property
     def is_corporation(self) -> bool:
-        return self.category == self.Category.CORPORATION
+        return self.category == self.CATEGORY_CORPORATION
 
     @property
     def is_character(self) -> bool:
-        return self.category == self.Category.CHARACTER
+        return self.category == self.CATEGORY_CHARACTER
 
-    @property
-    def avatar_url(self) -> str:
-        """returns the url to an icon image for this organization"""
-        if self.category == self.Category.ALLIANCE:
-            return EveAllianceInfo.generic_logo_url(self.id, self.AVATAR_SIZE)
-
-        elif self.category == self.Category.CORPORATION:
-            return EveCorporationInfo.generic_logo_url(self.id, self.AVATAR_SIZE)
-
-        elif self.category == self.Category.CHARACTER:
-            return EveCharacter.generic_portrait_url(self.id, self.AVATAR_SIZE)
-
-        else:
-            raise NotImplementedError(
-                "Avatar URL not implemented for category %s" % self.category
-            )
-
-    @classmethod
-    def get_category_for_operation_mode(cls, mode: str) -> str:
-        """return organization category related to given operation mode"""
-        if mode == FREIGHT_OPERATION_MODE_MY_ALLIANCE:
-            return cls.Category.ALLIANCE
-        else:
-            return cls.Category.CORPORATION
+    def icon_url(self, size=AVATAR_SIZE) -> str:
+        """Url to an icon image for this organization."""
+        if self.category == self.CATEGORY_ALLIANCE:
+            return EveAllianceInfo.generic_logo_url(self.id, size=size)
+        elif self.category == self.CATEGORY_CORPORATION:
+            return EveCorporationInfo.generic_logo_url(self.id, size=size)
+        elif self.category == self.CATEGORY_CHARACTER:
+            return EveCharacter.generic_portrait_url(self.id, size=size)
+        raise NotImplementedError(
+            "Avatar URL not implemented for category %s" % self.category
+        )
 
 
 class ContractHandler(models.Model):
@@ -584,7 +586,7 @@ class ContractHandler(models.Model):
         (ERROR_ESI_UNAVAILABLE, "ESI API is currently unavailable"),
         (
             ERROR_OPERATION_MODE_MISMATCH,
-            "Operaton mode does not match with current setting",
+            "Operation mode does not match with current setting",
         ),
         (ERROR_UNKNOWN, "Unknown error"),
     ]
@@ -609,7 +611,7 @@ class ContractHandler(models.Model):
         default=None,
         null=True,
         blank=True,
-        help_text=("global modifier for price per volume in percent, e.g. 2.5 = +2.5%"),
+        help_text="global modifier for price per volume in percent, e.g. 2.5 = +2.5%",
     )
     version_hash = models.CharField(
         max_length=32,
@@ -624,7 +626,7 @@ class ContractHandler(models.Model):
     last_error = models.IntegerField(
         choices=ERRORS_LIST,
         default=ERROR_NONE,
-        help_text="error that occurred at the last sync atttempt (if any)",
+        help_text="error that occurred at the last sync attempt (if any)",
     )
 
     def __str__(self):
@@ -1176,7 +1178,7 @@ class Contract(models.Model):
                 avatar_url = None
             else:
                 username = FREIGHT_APP_NAME
-                avatar_url = self.handler.organization.avatar_url
+                avatar_url = self.handler.organization.icon_url(size=AVATAR_SIZE)
 
             hook = dhooks_lite.Webhook(
                 FREIGHT_DISCORD_WEBHOOK_URL, username=username, avatar_url=avatar_url
@@ -1210,7 +1212,7 @@ class Contract(models.Model):
                     self.date_notified = now()
                     self.save()
                 else:
-                    logger.warn(
+                    logger.warning(
                         "%s: Failed to send message. HTTP code: %s",
                         self,
                         response.status_code,
@@ -1271,7 +1273,7 @@ class Contract(models.Model):
             avatar_url = None
         else:
             username = FREIGHT_APP_NAME
-            avatar_url = self.handler.organization.avatar_url
+            avatar_url = self.handler.organization.icon_url(size=AVATAR_SIZE)
 
         hook = dhooks_lite.Webhook(
             FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL,
@@ -1298,7 +1300,7 @@ class Contract(models.Model):
                 defaults={"date_notified": now()},
             )
         else:
-            logger.warn(
+            logger.warning(
                 "%s: Failed to send message. HTTP code: %s",
                 self,
                 response.status_code,

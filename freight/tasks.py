@@ -19,7 +19,7 @@ def _get_user(user_pk) -> User:
         try:
             user = User.objects.get(pk=user_pk)
         except User.DoesNotExist:
-            logger.warning("Ignoring non-existing user with pk {}".format(user_pk))
+            logger.warning("Ignoring non-existing user with pk %s", user_pk)
     return user
 
 
@@ -38,9 +38,9 @@ def update_contracts_esi(force_sync=False, user_pk=None) -> None:
 
 
 @shared_task
-def send_contract_notifications(force_sent=False, rate_limted=True) -> None:
+def send_contract_notifications(force_sent=False, rate_limited=True) -> None:
     """Send notification about outstanding contracts that have pricing"""
-    Contract.objects.send_notifications(force_sent, rate_limted)
+    Contract.objects.send_notifications(force_sent, rate_limited)
 
 
 @shared_task

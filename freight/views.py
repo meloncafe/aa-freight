@@ -234,6 +234,7 @@ def calculator(request, pricing_pk=None):
         "page_title": "Reward Calculator",
         "form": form,
         "pricing": pricing,
+        "has_pricing": Pricing.objects.exists(),
         "price": price,
         "organization_name": organization_name,
         "collateral": collateral if collateral is not None else 0,
@@ -254,8 +255,8 @@ def setup_contract_handler(request, token):
     success = True
     token_char = get_object_or_404(EveCharacter, character_id=token.character_id)
     if (
-        EveEntity.get_category_for_operation_mode(FREIGHT_OPERATION_MODE)
-        == EveEntity.Category.ALLIANCE
+        Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE)
+        == EveEntity.CATEGORY_ALLIANCE
     ) and token_char.alliance_id is None:
         messages.error(
             request,
@@ -297,7 +298,7 @@ def setup_contract_handler(request, token):
     if success:
         organization, _ = EveEntity.objects.update_or_create_from_evecharacter(
             token_char,
-            EveEntity.get_category_for_operation_mode(FREIGHT_OPERATION_MODE),
+            Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE),
         )
 
         handler, _ = ContractHandler.objects.update_or_create(

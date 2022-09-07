@@ -5,9 +5,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.test import override_settings
 from esi.errors import TokenInvalidError
 
-from app_utils.testing import NoSocketsTestCase
+from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
 
-from ..tasks import (
+from freight.tasks import (
     run_contracts_sync,
     send_contract_notifications,
     update_contracts_esi,
@@ -15,8 +15,8 @@ from ..tasks import (
     update_location,
     update_locations,
 )
-from . import get_invalid_object_pk
-from .testdata import create_contract_handler_w_contracts
+
+from .testdata.helpers import create_contract_handler_w_contracts
 
 MODULE_PATH = "freight.tasks"
 
@@ -55,7 +55,7 @@ class TestUpdateContractsEsi(NoSocketsTestCase):
 
     @patch(MODULE_PATH + ".ContractHandler.update_contracts_esi")
     def test_run_with_invalid_user(self, mock_update_contracts_esi):
-        update_contracts_esi(user_pk=get_invalid_object_pk(User))
+        update_contracts_esi(user_pk=generate_invalid_pk(User))
         self.assertTrue(mock_update_contracts_esi.called)
         _, kwargs = mock_update_contracts_esi.call_args
         self.assertIsNone(kwargs["user"])

@@ -23,7 +23,7 @@ class CalculatorForm(forms.Form):
     )
     collateral = forms.IntegerField(
         help_text=(
-            "Collaterial in ISK, must be roughly equal to the est. "
+            "Collateral in ISK, must be roughly equal to the est. "
             "value of your cargo"
         ),
         required=False,

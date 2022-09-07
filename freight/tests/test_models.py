@@ -16,29 +16,31 @@ from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
 from app_utils.testing import BravadoOperationStub, NoSocketsTestCase
 
-from ..app_settings import (
+from freight.app_settings import (
     FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE,
     FREIGHT_OPERATION_MODE_CORP_PUBLIC,
     FREIGHT_OPERATION_MODE_MY_ALLIANCE,
     FREIGHT_OPERATION_MODE_MY_CORPORATION,
     FREIGHT_OPERATION_MODES,
 )
-from ..models import (
+from freight.models import (
     Contract,
     ContractCustomerNotification,
     ContractHandler,
     EveEntity,
+    Freight,
     Location,
     Pricing,
 )
-from .testdata import (
+
+from .testdata.factories import create_pricing
+from .testdata.helpers import (
     characters_data,
     contracts_data,
     create_contract_handler_w_contracts,
     create_entities_from_characters,
     create_locations,
 )
-from .testdata.factories import create_pricing
 
 if "discord" in app_labels():
     from allianceauth.services.modules.discord.models import DiscordUser
@@ -466,7 +468,7 @@ class TestContract(NoSocketsTestCase):
         )
         cls.organization = EveEntity.objects.create(
             id=cls.character.alliance_id,
-            category=EveEntity.Category.ALLIANCE,
+            category=EveEntity.CATEGORY_ALLIANCE,
             name=cls.character.alliance_name,
         )
         cls.user = User.objects.create_user(
@@ -931,7 +933,7 @@ class TestContractHandler(NoSocketsTestCase):
         )
         self.organization = EveEntity.objects.create(
             id=self.character.alliance_id,
-            category=EveEntity.Category.ALLIANCE,
+            category=EveEntity.CATEGORY_ALLIANCE,
             name=self.character.alliance_name,
         )
         self.user = User.objects.create_user(
@@ -1458,41 +1460,15 @@ class TestEveEntity(NoSocketsTestCase):
 
     def test_avatar_url_alliance(self):
         expected = "https://images.evetech.net/alliances/93000001/logo?size=128"
-        self.assertEqual(self.alliance.avatar_url, expected)
+        self.assertEqual(self.alliance.icon_url(), expected)
 
     def test_avatar_url_corporation(self):
         expected = "https://images.evetech.net/corporations/92000001/logo?size=128"
-        self.assertEqual(self.corporation.avatar_url, expected)
+        self.assertEqual(self.corporation.icon_url(), expected)
 
     def test_avatar_url_character(self):
         expected = "https://images.evetech.net/characters/90000001/portrait?size=128"
-        self.assertEqual(self.character.avatar_url, expected)
-
-    def test_get_category_for_operation_mode_1(self):
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_MY_ALLIANCE
-            ),
-            EveEntity.Category.ALLIANCE,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_MY_CORPORATION
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_CORP_PUBLIC
-            ),
-            EveEntity.Category.CORPORATION,
-        )
+        self.assertEqual(self.character.icon_url(), expected)
 
 
 class TestContractCustomerNotification(NoSocketsTestCase):
@@ -1517,7 +1493,7 @@ class TestContractCustomerNotification(NoSocketsTestCase):
         )
         cls.organization = EveEntity.objects.create(
             id=cls.character.alliance_id,
-            category=EveEntity.Category.ALLIANCE,
+            category=EveEntity.CATEGORY_ALLIANCE,
             name=cls.character.alliance_name,
         )
         cls.user = User.objects.create_user(
@@ -1584,3 +1560,25 @@ class TestContractCustomerNotification(NoSocketsTestCase):
             "ContractCustomerNotification(pk={}, contract_id={}, " "status=in_progress)"
         ).format(self.notification.pk, self.notification.contract.contract_id)
         self.assertEqual(repr(self.notification), expected)
+
+
+class TestFreight(NoSocketsTestCase):
+    def test_get_category_for_operation_mode_1(self):
+        self.assertEqual(
+            Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE_MY_ALLIANCE),
+            EveEntity.CATEGORY_ALLIANCE,
+        )
+        self.assertEqual(
+            Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE_MY_CORPORATION),
+            EveEntity.CATEGORY_CORPORATION,
+        )
+        self.assertEqual(
+            Freight.category_for_operation_mode(
+                FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE
+            ),
+            EveEntity.CATEGORY_CORPORATION,
+        )
+        self.assertEqual(
+            Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE_CORP_PUBLIC),
+            EveEntity.CATEGORY_CORPORATION,
+        )

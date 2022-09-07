@@ -49,6 +49,7 @@ from .app_settings import (
     FREIGHT_OPERATION_MODE_MY_CORPORATION,
     FREIGHT_OPERATION_MODES,
 )
+from .constants import AVATAR_SIZE
 from .managers import ContractManager, EveEntityManager, LocationManager, PricingManager
 from .providers import esi
 
@@ -508,8 +509,6 @@ class EveEntity(models.Model):
         CORPORATION = "corporation", "Corporation"
         CHARACTER = "character", "Character"
 
-    AVATAR_SIZE = 128
-
     id = models.IntegerField(primary_key=True, validators=[MinValueValidator(0)])
     category = models.CharField(max_length=32, choices=Category.choices)
     name = models.CharField(max_length=254)
@@ -536,14 +535,14 @@ class EveEntity(models.Model):
     def is_character(self) -> bool:
         return self.category == self.Category.CHARACTER
 
-    def icon_url(self) -> str:
+    def icon_url(self, size=AVATAR_SIZE) -> str:
         """Url to an icon image for this organization."""
         if self.category == self.Category.ALLIANCE:
-            return EveAllianceInfo.generic_logo_url(self.id, self.AVATAR_SIZE)
+            return EveAllianceInfo.generic_logo_url(self.id, size=size)
         elif self.category == self.Category.CORPORATION:
-            return EveCorporationInfo.generic_logo_url(self.id, self.AVATAR_SIZE)
+            return EveCorporationInfo.generic_logo_url(self.id, size=size)
         elif self.category == self.Category.CHARACTER:
-            return EveCharacter.generic_portrait_url(self.id, self.AVATAR_SIZE)
+            return EveCharacter.generic_portrait_url(self.id, size=size)
         raise NotImplementedError(
             "Avatar URL not implemented for category %s" % self.category
         )
@@ -1171,7 +1170,7 @@ class Contract(models.Model):
                 avatar_url = None
             else:
                 username = FREIGHT_APP_NAME
-                avatar_url = self.handler.organization.icon_url()
+                avatar_url = self.handler.organization.icon_url(size=AVATAR_SIZE)
 
             hook = dhooks_lite.Webhook(
                 FREIGHT_DISCORD_WEBHOOK_URL, username=username, avatar_url=avatar_url
@@ -1266,7 +1265,7 @@ class Contract(models.Model):
             avatar_url = None
         else:
             username = FREIGHT_APP_NAME
-            avatar_url = self.handler.organization.icon_url()
+            avatar_url = self.handler.organization.icon_url(size=AVATAR_SIZE)
 
         hook = dhooks_lite.Webhook(
             FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL,

@@ -518,13 +518,6 @@ class EveEntity(models.Model):
         (CATEGORY_CHARACTER, "Character"),
     )
 
-    class Category(models.TextChoices):
-        """entity categories supported by this class"""
-
-        ALLIANCE = "alliance", "Alliance"
-        CORPORATION = "corporation", "Corporation"
-        CHARACTER = "character", "Character"
-
     id = models.IntegerField(primary_key=True, validators=[MinValueValidator(0)])
     category = models.CharField(max_length=32, choices=CATEGORY_CHOICES)
     name = models.CharField(max_length=254)
@@ -1212,7 +1205,7 @@ class Contract(models.Model):
                     self.date_notified = now()
                     self.save()
                 else:
-                    logger.warning(
+                    logger.warn(
                         "%s: Failed to send message. HTTP code: %s",
                         self,
                         response.status_code,
@@ -1300,7 +1293,7 @@ class Contract(models.Model):
                 defaults={"date_notified": now()},
             )
         else:
-            logger.warning(
+            logger.warn(
                 "%s: Failed to send message. HTTP code: %s",
                 self,
                 response.status_code,

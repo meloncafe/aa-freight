@@ -19,25 +19,25 @@ if "discord" in app_labels():
     from allianceauth.services.modules.discord.models import DiscordUser
 
 
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+_currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
 def _load_structures_data() -> list:
-    with open(currentdir + "/universe_structures.json", "r", encoding="utf-8") as f:
+    with open(_currentdir + "/universe_structures.json", "r", encoding="utf-8") as f:
         data = json.load(f)
 
     return data
 
 
 def _load_characters_data() -> list:
-    with open(currentdir + "/characters.json", "r", encoding="utf-8") as f:
+    with open(_currentdir + "/characters.json", "r", encoding="utf-8") as f:
         data = json.load(f)
 
     return data
 
 
 def _load_contract_data() -> list:
-    with open(currentdir + "/contracts.json", "r", encoding="utf-8") as f:
+    with open(_currentdir + "/contracts.json", "r", encoding="utf-8") as f:
         _contracts_data = json.load(f)
 
     # update dates to something current, so won't be treated as stale
@@ -89,6 +89,11 @@ def create_locations():
         category_id=3,
     )
     return jita, amamake, amarr
+
+
+def load_eve_characters():
+    for character in characters_data:
+        EveCharacter.objects.create(**character)
 
 
 def create_user_from_character(character: EveCharacter) -> User:

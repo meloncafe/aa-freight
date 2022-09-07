@@ -24,6 +24,7 @@ from .app_settings import (
     FREIGHT_STATISTICS_MAX_DAYS,
 )
 from .forms import CalculatorForm
+from .helpers import update_or_create_eve_entity_from_evecharacter
 from .models import Contract, ContractHandler, EveEntity, Freight, Location, Pricing
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
@@ -296,9 +297,8 @@ def setup_contract_handler(request, token):
             success = False
 
     if success:
-        organization, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            token_char,
-            Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE),
+        organization, _ = update_or_create_eve_entity_from_evecharacter(
+            token_char, Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE)
         )
 
         handler, _ = ContractHandler.objects.update_or_create(
@@ -350,7 +350,7 @@ def add_location_2(request):
         if form.is_valid():
             location_id = form.cleaned_data["location_id"]
             try:
-                location, created = Location.objects.update_or_create_from_esi(
+                location, created = Location.objects.update_or_create_esi(
                     token=token, location_id=location_id, add_unknown=False
                 )
             except OSError as ex:

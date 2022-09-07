@@ -92,7 +92,7 @@ class TestUpdateContractsPricing(NoSocketsTestCase):
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 @patch(MODULE_PATH + ".ContractHandler.token")
-@patch(MODULE_PATH + ".Location.objects.update_or_create_from_esi")
+@patch(MODULE_PATH + ".Location.objects.update_or_create_esi")
 class TestUpdateLocation(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):

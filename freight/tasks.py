@@ -65,7 +65,7 @@ def update_location(location_id: int) -> None:
     """Updates the location from ESI"""
     Location.objects.get(id=location_id)
     token = _get_contract_handler().token()
-    Location.objects.update_or_create_from_esi(location_id=location_id, token=token)
+    Location.objects.update_or_create_esi(location_id=location_id, token=token)
 
 
 @shared_task

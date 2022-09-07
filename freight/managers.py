@@ -54,7 +54,7 @@ class LocationManager(models.Manager):
     STATION_ID_START = 60000000
     STATION_ID_END = 69999999
 
-    def get_or_create_from_esi(
+    def get_or_create_esi(
         self, token: Token, location_id: int, add_unknown: bool = True
     ) -> Tuple[models.Model, bool]:
         """gets or creates location object with data fetched from ESI"""
@@ -64,12 +64,12 @@ class LocationManager(models.Manager):
             location = self.get(id=location_id)
             created = False
         except Location.DoesNotExist:
-            location, created = self.update_or_create_from_esi(
+            location, created = self.update_or_create_esi(
                 token=token, location_id=location_id, add_unknown=add_unknown
             )
         return location, created
 
-    def update_or_create_from_esi(
+    def update_or_create_esi(
         self, token: Token, location_id: int, add_unknown: bool = True
     ) -> Tuple[models.Model, bool]:
         """updates or creates location object with data fetched from ESI"""
@@ -94,7 +94,7 @@ class LocationManager(models.Manager):
                 token=token.valid_access_token(), structure_id=location_id
             ).results()
         except (HTTPUnauthorized, HTTPForbidden) as ex:
-            logger.warning("%s: No access to this structure: %s", location_id, ex)
+            logger.warn("%s: No access to this structure: %s", location_id, ex)
             if add_unknown:
                 return self.get_or_create(
                     id=location_id,
@@ -117,7 +117,7 @@ class LocationManager(models.Manager):
 
 
 class EveEntityManager(models.Manager):
-    def get_or_create_from_esi(self, id: int) -> Tuple[models.Model, bool]:
+    def get_or_create_esi(self, *, id: int) -> Tuple[models.Model, bool]:
         """gets or creates entity object with data fetched from ESI"""
         from .models import EveEntity
 
@@ -125,9 +125,9 @@ class EveEntityManager(models.Manager):
             entity = self.get(id=id)
             return entity, False
         except EveEntity.DoesNotExist:
-            return self.update_or_create_from_esi(id)
+            return self.update_or_create_esi(id=id)
 
-    def update_or_create_from_esi(self, id: int) -> Tuple[models.Model, bool]:
+    def update_or_create_esi(self, *, id: int) -> Tuple[models.Model, bool]:
         """updates or creates entity object with data fetched from ESI"""
         response = esi.client.Universe.post_universe_names(ids=[id]).results()
         if len(response) != 1:
@@ -140,40 +140,6 @@ class EveEntityManager(models.Manager):
                 "category": entity_data["category"],
             },
         )
-
-    def update_or_create_from_evecharacter(
-        self, character: EveCharacter, category: str
-    ) -> Tuple[models.Model, bool]:
-        """updates or creates EveEntity object from an EveCharacter object"""
-        from .models import EveEntity
-
-        if category == EveEntity.CATEGORY_ALLIANCE:
-            if not character.alliance_id:
-                raise ValueError("character is not an alliance member")
-            return self.update_or_create(
-                id=character.alliance_id,
-                defaults={
-                    "name": character.alliance_name,
-                    "category": EveEntity.CATEGORY_ALLIANCE,
-                },
-            )
-        elif category == EveEntity.CATEGORY_CORPORATION:
-            return self.update_or_create(
-                id=character.corporation_id,
-                defaults={
-                    "name": character.corporation_name,
-                    "category": EveEntity.CATEGORY_CORPORATION,
-                },
-            )
-        elif category == EveEntity.CATEGORY_CHARACTER:
-            return self.update_or_create(
-                id=character.character_id,
-                defaults={
-                    "name": character.character_name,
-                    "category": EveEntity.CATEGORY_CHARACTER,
-                },
-            )
-        raise ValueError("Invalid category: {}".format(category))
 
 
 class ContractQuerySet(models.QuerySet):
@@ -341,10 +307,10 @@ class ContractManagerBase(models.Manager):
     def _identify_locations(self, contract: dict, token: Token) -> tuple:
         from .models import Location
 
-        start_location, _ = Location.objects.get_or_create_from_esi(
+        start_location, _ = Location.objects.get_or_create_esi(
             token, contract["start_location_id"]
         )
-        end_location, _ = Location.objects.get_or_create_from_esi(
+        end_location, _ = Location.objects.get_or_create_esi(
             token, contract["end_location_id"]
         )
         return start_location, end_location
@@ -354,8 +320,8 @@ class ContractManagerBase(models.Manager):
 
         if int(contract["acceptor_id"]) != 0:
             try:
-                entity, _ = EveEntity.objects.get_or_create_from_esi(
-                    contract["acceptor_id"]
+                entity, _ = EveEntity.objects.get_or_create_esi(
+                    id=contract["acceptor_id"]
                 )
                 if entity.is_character:
                     try:

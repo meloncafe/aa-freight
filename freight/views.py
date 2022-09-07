@@ -350,7 +350,7 @@ def add_location_2(request):
         if form.is_valid():
             location_id = form.cleaned_data["location_id"]
             try:
-                location, created = Location.objects.update_or_create_from_esi(
+                location, created = Location.objects.update_or_create_esi(
                     token=token, location_id=location_id, add_unknown=False
                 )
             except OSError as ex:

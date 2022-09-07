@@ -31,12 +31,12 @@ CONTACTS_COUNT = 1000
 # contract handler
 handler = ContractHandler.objects.first()
 if not handler:
-    organization = EveEntity.objects.get_or_create_from_esi(id=GURISTAS_CORPORATION_ID)
+    organization = EveEntity.objects.get_or_create_esi(id=GURISTAS_CORPORATION_ID)
     handler = ContractHandler.objects.create(organization=organization)
 
 # default locations
-jita, _ = Location.objects.get_or_create_from_esi(token=None, location_id=JITA_44_ID)
-amarr, _ = Location.objects.get_or_create_from_esi(token=None, location_id=AMARR_ID)
+jita, _ = Location.objects.get_or_create_esi(token=None, location_id=JITA_44_ID)
+amarr, _ = Location.objects.get_or_create_esi(token=None, location_id=AMARR_ID)
 
 # pricing
 pricing, _ = Pricing.objects.update_or_create(

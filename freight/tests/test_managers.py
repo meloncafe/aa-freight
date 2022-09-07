@@ -75,7 +75,7 @@ class TestEveEntityManager(NoSocketsTestCase):
             TestEveEntityManager.esi_post_universe_names
         )
 
-        obj, created = EveEntity.objects.update_or_create_from_esi(id=90000001)
+        obj, created = EveEntity.objects.update_or_create_esi(id=90000001)
         self.assertTrue(created)
         self.assertEqual(obj.id, 90000001)
         self.assertEqual(obj.name, "Bruce Wayne")
@@ -87,7 +87,7 @@ class TestEveEntityManager(NoSocketsTestCase):
             TestEveEntityManager.esi_post_universe_names
         )
 
-        obj, created = EveEntity.objects.get_or_create_from_esi(id=90000001)
+        obj, created = EveEntity.objects.get_or_create_esi(id=90000001)
         self.assertTrue(created)
         self.assertEqual(obj.id, 90000001)
         self.assertEqual(obj.name, "Bruce Wayne")
@@ -98,11 +98,11 @@ class TestEveEntityManager(NoSocketsTestCase):
         mock_esi.client.Universe.post_universe_names.side_effect = (
             TestEveEntityManager.esi_post_universe_names
         )
-        obj, _ = EveEntity.objects.update_or_create_from_esi(id=90000001)
+        obj, _ = EveEntity.objects.update_or_create_esi(id=90000001)
         obj.name = "Blue Company"
         obj.category = EveEntity.CATEGORY_CORPORATION
 
-        obj, created = EveEntity.objects.update_or_create_from_esi(id=90000001)
+        obj, created = EveEntity.objects.update_or_create_esi(id=90000001)
         self.assertFalse(created)
         self.assertEqual(obj.id, 90000001)
         self.assertEqual(obj.name, "Bruce Wayne")
@@ -115,7 +115,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         )
 
         with self.assertRaises(ObjectNotFound):
-            entity, _ = EveEntity.objects.get_or_create_from_esi(id=666)
+            entity, _ = EveEntity.objects.get_or_create_esi(id=666)
 
     def test_can_create_corporation_from_evecharacter(self):
         corporation, _ = EveEntity.objects.update_or_create_from_evecharacter(
@@ -190,9 +190,7 @@ class TestLocationManager(NoSocketsTestCase):
             get_universe_structures_structure_id
         )
         # when
-        obj, created = Location.objects.update_or_create_from_esi(
-            self.token, 1000000000001
-        )
+        obj, created = Location.objects.update_or_create_esi(self.token, 1000000000001)
         # then
         self.assertTrue(created)
         self.assertEqual(obj.id, 1000000000001)
@@ -205,15 +203,13 @@ class TestLocationManager(NoSocketsTestCase):
         mock_esi.client.Universe.get_universe_structures_structure_id.side_effect = (
             get_universe_structures_structure_id
         )
-        obj, _ = Location.objects.update_or_create_from_esi(self.token, 1000000000001)
+        obj, _ = Location.objects.update_or_create_esi(self.token, 1000000000001)
         obj.name = "Not my structure"
         obj.solar_system_id = 123
         obj.type_id = 456
         obj.save()
         # when
-        obj, created = Location.objects.update_or_create_from_esi(
-            self.token, 1000000000001
-        )
+        obj, created = Location.objects.update_or_create_esi(self.token, 1000000000001)
         # then
         self.assertFalse(created)
         self.assertEqual(obj.id, 1000000000001)
@@ -226,13 +222,11 @@ class TestLocationManager(NoSocketsTestCase):
         mock_esi.client.Universe.get_universe_structures_structure_id.side_effect = (
             get_universe_structures_structure_id
         )
-        obj_created, _ = Location.objects.update_or_create_from_esi(
+        obj_created, _ = Location.objects.update_or_create_esi(
             self.token, 1000000000001
         )
         # when
-        obj, created = Location.objects.get_or_create_from_esi(
-            self.token, 1000000000001
-        )
+        obj, created = Location.objects.get_or_create_esi(self.token, 1000000000001)
         # then
         self.assertFalse(created)
         self.assertEqual(obj, obj_created)
@@ -243,9 +237,7 @@ class TestLocationManager(NoSocketsTestCase):
             get_universe_structures_structure_id
         )
         # when
-        obj, created = Location.objects.get_or_create_from_esi(
-            self.token, 1000000000001
-        )
+        obj, created = Location.objects.get_or_create_esi(self.token, 1000000000001)
         # then
         self.assertTrue(created)
         self.assertEqual(obj.id, 1000000000001)
@@ -260,9 +252,7 @@ class TestLocationManager(NoSocketsTestCase):
         )
         # when/then
         with self.assertRaises(HTTPForbidden):
-            Location.objects.update_or_create_from_esi(
-                self.token, 42, add_unknown=False
-            )
+            Location.objects.update_or_create_esi(self.token, 42, add_unknown=False)
 
     def test_should_propagates_exceptions_on_structure_create(self, mock_esi):
         # given
@@ -271,9 +261,7 @@ class TestLocationManager(NoSocketsTestCase):
         )
         # when/then
         with self.assertRaises(RuntimeError):
-            Location.objects.update_or_create_from_esi(
-                self.token, 42, add_unknown=False
-            )
+            Location.objects.update_or_create_esi(self.token, 42, add_unknown=False)
 
     def test_should_create_skeleton_structure_on_http_error_if_requested(
         self, mock_esi
@@ -283,7 +271,7 @@ class TestLocationManager(NoSocketsTestCase):
             HTTPForbidden(BravadoResponseStub(status_code=403, reason="test"))
         )
         # when
-        obj, created = Location.objects.update_or_create_from_esi(
+        obj, created = Location.objects.update_or_create_esi(
             self.token, 42, add_unknown=True
         )
         # then
@@ -299,7 +287,7 @@ class TestLocationManager(NoSocketsTestCase):
         )
         # when/then
         with self.assertRaises(RuntimeError):
-            Location.objects.update_or_create_from_esi(self.token, 42, add_unknown=True)
+            Location.objects.update_or_create_esi(self.token, 42, add_unknown=True)
 
     def test_should_create_station_from_scratch(self, mock_esi):
         # given
@@ -307,7 +295,7 @@ class TestLocationManager(NoSocketsTestCase):
             get_universe_stations_station_id
         )
         # when
-        obj, created = Location.objects.update_or_create_from_esi(self.token, 60000001)
+        obj, created = Location.objects.update_or_create_esi(self.token, 60000001)
         # then
         self.assertTrue(created)
         self.assertEqual(obj.id, 60000001)
@@ -320,13 +308,13 @@ class TestLocationManager(NoSocketsTestCase):
         mock_esi.client.Universe.get_universe_stations_station_id.side_effect = (
             get_universe_stations_station_id
         )
-        obj, created = Location.objects.update_or_create_from_esi(self.token, 60000001)
+        obj, created = Location.objects.update_or_create_esi(self.token, 60000001)
         obj.name = "Not my station"
         obj.solar_system_id = 123
         obj.type_id = 456
         obj.save()
         # when
-        obj, created = Location.objects.update_or_create_from_esi(self.token, 60000001)
+        obj, created = Location.objects.update_or_create_esi(self.token, 60000001)
         # then
         self.assertFalse(created)
         self.assertEqual(obj.id, 60000001)
@@ -341,7 +329,7 @@ class TestLocationManager(NoSocketsTestCase):
         )
         # when/then
         with self.assertRaises(HTTPNotFound):
-            Location.objects.update_or_create_from_esi(
+            Location.objects.update_or_create_esi(
                 self.token, 60000001, add_unknown=False
             )
 

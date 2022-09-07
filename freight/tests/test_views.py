@@ -483,7 +483,7 @@ class TestAddLocation(TestCase):
 
     @patch(MODULE_PATH + ".FREIGHT_OPERATION_MODE", FREIGHT_OPERATION_MODE_MY_ALLIANCE)
     @patch(MODULE_PATH + ".messages", autospec=True)
-    @patch(MODULE_PATH + ".Location.objects.update_or_create_from_esi", autospec=True)
+    @patch(MODULE_PATH + ".Location.objects.update_or_create_esi", autospec=True)
     def test_normal(self, mock_update_or_create_from_esi, mock_message_plus):
         location_id = 1022167642188
         location = Location.objects.get(id=location_id)
@@ -512,7 +512,7 @@ class TestAddLocation(TestCase):
 
     @patch(MODULE_PATH + ".FREIGHT_OPERATION_MODE", FREIGHT_OPERATION_MODE_MY_ALLIANCE)
     @patch(MODULE_PATH + ".messages", autospec=True)
-    @patch(MODULE_PATH + ".Location.objects.update_or_create_from_esi", autospec=True)
+    @patch(MODULE_PATH + ".Location.objects.update_or_create_esi", autospec=True)
     def test_fetching_location_fails(
         self, mock_update_or_create_from_esi, mock_message_plus
     ):

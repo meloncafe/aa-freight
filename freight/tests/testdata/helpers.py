@@ -38,10 +38,10 @@ def _load_characters_data() -> list:
 
 def _load_contract_data() -> list:
     with open(currentdir + "/contracts.json", "r", encoding="utf-8") as f:
-        contracts_data = json.load(f)
+        _contracts_data = json.load(f)
 
     # update dates to something current, so won't be treated as stale
-    for contract in contracts_data:
+    for contract in _contracts_data:
         date_issued = now() - dt.timedelta(hours=12, minutes=randrange(30))
         date_accepted = date_issued + dt.timedelta(hours=2, minutes=randrange(30))
         date_completed = date_accepted + dt.timedelta(hours=3, minutes=randrange(30))
@@ -58,7 +58,7 @@ def _load_contract_data() -> list:
         if "date_expired" in contract:
             contract["date_expired"] = date_expired
 
-    return contracts_data
+    return _contracts_data
 
 
 contracts_data = _load_contract_data()

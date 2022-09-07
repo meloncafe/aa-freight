@@ -1212,7 +1212,7 @@ class Contract(models.Model):
                     self.date_notified = now()
                     self.save()
                 else:
-                    logger.warn(
+                    logger.warning(
                         "%s: Failed to send message. HTTP code: %s",
                         self,
                         response.status_code,
@@ -1300,7 +1300,7 @@ class Contract(models.Model):
                 defaults={"date_notified": now()},
             )
         else:
-            logger.warn(
+            logger.warning(
                 "%s: Failed to send message. HTTP code: %s",
                 self,
                 response.status_code,

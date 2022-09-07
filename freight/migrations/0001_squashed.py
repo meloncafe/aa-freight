@@ -8,25 +8,25 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    replaces = [
-        ("freight", "0001_initial_new"),
-        ("freight", "0002_auto_20191015_1229"),
-        ("freight", "0003_auto_20191028_1023"),
-        ("freight", "0004_remove_contract_price"),
-        ("freight", "0005_auto_20191028_2155"),
-        ("freight", "0006_auto_20191028_2204"),
-        ("freight", "0007_auto_20191029_1803"),
-        ("freight", "0008_auto_20191030_1547"),
-        ("freight", "0009_auto_20191030_2046"),
-        ("freight", "0010_auto_20191108_2220"),
-        ("freight", "0011_contractcustomernotification"),
-        ("freight", "0012_auto_20191210_1406"),
-        ("freight", "0013_auto_20191214_1522"),
-        ("freight", "0014_auto_20191214_1712"),
-        ("freight", "0015_auto_20200130_2328"),
-        ("freight", "0016_default_pricing"),
-        ("freight", "0017_add_indices"),
-    ]
+    # replaces = [
+    #     ("freight", "0001_initial_new"),
+    #     ("freight", "0002_auto_20191015_1229"),
+    #     ("freight", "0003_auto_20191028_1023"),
+    #     ("freight", "0004_remove_contract_price"),
+    #     ("freight", "0005_auto_20191028_2155"),
+    #     ("freight", "0006_auto_20191028_2204"),
+    #     ("freight", "0007_auto_20191029_1803"),
+    #     ("freight", "0008_auto_20191030_1547"),
+    #     ("freight", "0009_auto_20191030_2046"),
+    #     ("freight", "0010_auto_20191108_2220"),
+    #     ("freight", "0011_contractcustomernotification"),
+    #     ("freight", "0012_auto_20191210_1406"),
+    #     ("freight", "0013_auto_20191214_1522"),
+    #     ("freight", "0014_auto_20191214_1712"),
+    #     ("freight", "0015_auto_20200130_2328"),
+    #     ("freight", "0016_default_pricing"),
+    #     ("freight", "0017_add_indices"),
+    # ]
 
     initial = True
 

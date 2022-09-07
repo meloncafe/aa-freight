@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.7.0] - 2022-09-07
+
+>**IMPORTANT**: This update removes old migrations that had been replaced many months ago with 1.6.0. If you are updating from a version before 1.6.x you please need to update to the latest 1.6.x version first, before installing this version.
+
 ## Added
 
 - Show warning message on calculator when no pricing is defined
+
+## Changed
+
+- Removed squashed migrations
+- Refactoring
+- Preparations to move to eveuniverse
 
 ## [1.6.5] - 2022-07-19
 

@@ -94,7 +94,7 @@ class LocationManager(models.Manager):
                 token=token.valid_access_token(), structure_id=location_id
             ).results()
         except (HTTPUnauthorized, HTTPForbidden) as ex:
-            logger.warn("%s: No access to this structure: %s", location_id, ex)
+            logger.warning("%s: No access to this structure: %s", location_id, ex)
             if add_unknown:
                 return self.get_or_create(
                     id=location_id,

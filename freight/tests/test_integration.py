@@ -121,7 +121,7 @@ class TestCalculatorWeb2(WebTest):
         response = self.app.get(reverse("freight:calculator"))
         # then
         self.assertEqual(response.status_code, 200)
-        self.assertIn("No pricing/routes defined!", response.text)
+        self.assertIn("Please define a pricing/route!", response.text)
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)

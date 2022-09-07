@@ -90,8 +90,7 @@ class Freight(models.Model):
         msg = [(x, y) for x, y in FREIGHT_OPERATION_MODES if x == operation_mode]
         if len(msg) != 1:
             raise ValueError("Undefined mode")
-        else:
-            return msg[0][1]
+        return msg[0][1]
 
     @staticmethod
     def category_for_operation_mode(mode: str) -> str:
@@ -509,6 +508,16 @@ class Pricing(models.Model):
 class EveEntity(models.Model):
     """An Eve entity like a corporation or a character"""
 
+    CATEGORY_ALLIANCE = "alliance"
+    CATEGORY_CHARACTER = "character"
+    CATEGORY_CORPORATION = "corporation"
+
+    CATEGORY_CHOICES = (
+        (CATEGORY_ALLIANCE, "Alliance"),
+        (CATEGORY_CORPORATION, "Corporation"),
+        (CATEGORY_CHARACTER, "Character"),
+    )
+
     class Category(models.TextChoices):
         """entity categories supported by this class"""
 
@@ -517,7 +526,7 @@ class EveEntity(models.Model):
         CHARACTER = "character", "Character"
 
     id = models.IntegerField(primary_key=True, validators=[MinValueValidator(0)])
-    category = models.CharField(max_length=32, choices=Category.choices)
+    category = models.CharField(max_length=32, choices=CATEGORY_CHOICES)
     name = models.CharField(max_length=254)
 
     objects = EveEntityManager()

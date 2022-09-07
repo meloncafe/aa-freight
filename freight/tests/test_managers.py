@@ -17,13 +17,8 @@ from app_utils.testing import (
     add_new_token,
 )
 
-from ..app_settings import (
-    FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE,
-    FREIGHT_OPERATION_MODE_CORP_PUBLIC,
-    FREIGHT_OPERATION_MODE_MY_ALLIANCE,
-    FREIGHT_OPERATION_MODE_MY_CORPORATION,
-)
-from ..models import Contract, EveEntity, Location, Pricing
+from freight.models import Contract, EveEntity, Location, Pricing
+
 from . import get_invalid_object_pk
 from .testdata import (
     characters_data,
@@ -121,32 +116,6 @@ class TestEveEntityManager(NoSocketsTestCase):
 
         with self.assertRaises(ObjectNotFound):
             entity, _ = EveEntity.objects.get_or_create_from_esi(id=666)
-
-    def test_can_return_category_for_operation_mode(self):
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_MY_ALLIANCE
-            ),
-            EveEntity.Category.ALLIANCE,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_MY_CORPORATION
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_CORP_PUBLIC
-            ),
-            EveEntity.Category.CORPORATION,
-        )
 
     def test_can_create_corporation_from_evecharacter(self):
         corporation, _ = EveEntity.objects.update_or_create_from_evecharacter(

@@ -254,7 +254,7 @@ def setup_contract_handler(request, token):
     success = True
     token_char = get_object_or_404(EveCharacter, character_id=token.character_id)
     if (
-        EveEntity.get_category_for_operation_mode(FREIGHT_OPERATION_MODE)
+        Freight.get_category_for_operation_mode(FREIGHT_OPERATION_MODE)
         == EveEntity.Category.ALLIANCE
     ) and token_char.alliance_id is None:
         messages.error(
@@ -297,7 +297,7 @@ def setup_contract_handler(request, token):
     if success:
         organization, _ = EveEntity.objects.update_or_create_from_evecharacter(
             token_char,
-            EveEntity.get_category_for_operation_mode(FREIGHT_OPERATION_MODE),
+            Freight.get_category_for_operation_mode(FREIGHT_OPERATION_MODE),
         )
 
         handler, _ = ContractHandler.objects.update_or_create(

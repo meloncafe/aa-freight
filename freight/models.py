@@ -93,6 +93,13 @@ class Freight(models.Model):
         else:
             return msg[0][1]
 
+    @staticmethod
+    def get_category_for_operation_mode(mode: str) -> str:
+        """Organization category for given operation mode."""
+        if mode == FREIGHT_OPERATION_MODE_MY_ALLIANCE:
+            return EveEntity.Category.ALLIANCE
+        return EveEntity.Category.CORPORATION
+
 
 class Location(models.Model):
     """An Eve Online courier contract location: station or Upwell structure"""
@@ -546,14 +553,6 @@ class EveEntity(models.Model):
         raise NotImplementedError(
             "Avatar URL not implemented for category %s" % self.category
         )
-
-    @classmethod
-    def get_category_for_operation_mode(cls, mode: str) -> str:
-        """return organization category related to given operation mode"""
-        if mode == FREIGHT_OPERATION_MODE_MY_ALLIANCE:
-            return cls.Category.ALLIANCE
-        else:
-            return cls.Category.CORPORATION
 
 
 class ContractHandler(models.Model):

@@ -16,21 +16,23 @@ from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.django import app_labels
 from app_utils.testing import BravadoOperationStub, NoSocketsTestCase
 
-from ..app_settings import (
+from freight.app_settings import (
     FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE,
     FREIGHT_OPERATION_MODE_CORP_PUBLIC,
     FREIGHT_OPERATION_MODE_MY_ALLIANCE,
     FREIGHT_OPERATION_MODE_MY_CORPORATION,
     FREIGHT_OPERATION_MODES,
 )
-from ..models import (
+from freight.models import (
     Contract,
     ContractCustomerNotification,
     ContractHandler,
     EveEntity,
+    Freight,
     Location,
     Pricing,
 )
+
 from .testdata import (
     characters_data,
     contracts_data,
@@ -1468,32 +1470,6 @@ class TestEveEntity(NoSocketsTestCase):
         expected = "https://images.evetech.net/characters/90000001/portrait?size=128"
         self.assertEqual(self.character.icon_url(), expected)
 
-    def test_get_category_for_operation_mode_1(self):
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_MY_ALLIANCE
-            ),
-            EveEntity.Category.ALLIANCE,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_MY_CORPORATION
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-        self.assertEqual(
-            EveEntity.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_CORP_PUBLIC
-            ),
-            EveEntity.Category.CORPORATION,
-        )
-
 
 class TestContractCustomerNotification(NoSocketsTestCase):
     @classmethod
@@ -1584,3 +1560,27 @@ class TestContractCustomerNotification(NoSocketsTestCase):
             "ContractCustomerNotification(pk={}, contract_id={}, " "status=in_progress)"
         ).format(self.notification.pk, self.notification.contract.contract_id)
         self.assertEqual(repr(self.notification), expected)
+
+
+class TestFreight(NoSocketsTestCase):
+    def test_get_category_for_operation_mode_1(self):
+        self.assertEqual(
+            Freight.get_category_for_operation_mode(FREIGHT_OPERATION_MODE_MY_ALLIANCE),
+            EveEntity.Category.ALLIANCE,
+        )
+        self.assertEqual(
+            Freight.get_category_for_operation_mode(
+                FREIGHT_OPERATION_MODE_MY_CORPORATION
+            ),
+            EveEntity.Category.CORPORATION,
+        )
+        self.assertEqual(
+            Freight.get_category_for_operation_mode(
+                FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE
+            ),
+            EveEntity.Category.CORPORATION,
+        )
+        self.assertEqual(
+            Freight.get_category_for_operation_mode(FREIGHT_OPERATION_MODE_CORP_PUBLIC),
+            EveEntity.Category.CORPORATION,
+        )

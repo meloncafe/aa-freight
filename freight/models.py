@@ -536,22 +536,17 @@ class EveEntity(models.Model):
     def is_character(self) -> bool:
         return self.category == self.Category.CHARACTER
 
-    @property
-    def avatar_url(self) -> str:
-        """returns the url to an icon image for this organization"""
+    def icon_url(self) -> str:
+        """Url to an icon image for this organization."""
         if self.category == self.Category.ALLIANCE:
             return EveAllianceInfo.generic_logo_url(self.id, self.AVATAR_SIZE)
-
         elif self.category == self.Category.CORPORATION:
             return EveCorporationInfo.generic_logo_url(self.id, self.AVATAR_SIZE)
-
         elif self.category == self.Category.CHARACTER:
             return EveCharacter.generic_portrait_url(self.id, self.AVATAR_SIZE)
-
-        else:
-            raise NotImplementedError(
-                "Avatar URL not implemented for category %s" % self.category
-            )
+        raise NotImplementedError(
+            "Avatar URL not implemented for category %s" % self.category
+        )
 
     @classmethod
     def get_category_for_operation_mode(cls, mode: str) -> str:
@@ -1176,7 +1171,7 @@ class Contract(models.Model):
                 avatar_url = None
             else:
                 username = FREIGHT_APP_NAME
-                avatar_url = self.handler.organization.avatar_url
+                avatar_url = self.handler.organization.icon_url()
 
             hook = dhooks_lite.Webhook(
                 FREIGHT_DISCORD_WEBHOOK_URL, username=username, avatar_url=avatar_url
@@ -1271,7 +1266,7 @@ class Contract(models.Model):
             avatar_url = None
         else:
             username = FREIGHT_APP_NAME
-            avatar_url = self.handler.organization.avatar_url
+            avatar_url = self.handler.organization.icon_url()
 
         hook = dhooks_lite.Webhook(
             FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL,

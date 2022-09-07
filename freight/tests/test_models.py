@@ -1458,15 +1458,15 @@ class TestEveEntity(NoSocketsTestCase):
 
     def test_avatar_url_alliance(self):
         expected = "https://images.evetech.net/alliances/93000001/logo?size=128"
-        self.assertEqual(self.alliance.avatar_url, expected)
+        self.assertEqual(self.alliance.icon_url(), expected)
 
     def test_avatar_url_corporation(self):
         expected = "https://images.evetech.net/corporations/92000001/logo?size=128"
-        self.assertEqual(self.corporation.avatar_url, expected)
+        self.assertEqual(self.corporation.icon_url(), expected)
 
     def test_avatar_url_character(self):
         expected = "https://images.evetech.net/characters/90000001/portrait?size=128"
-        self.assertEqual(self.character.avatar_url, expected)
+        self.assertEqual(self.character.icon_url(), expected)
 
     def test_get_category_for_operation_mode_1(self):
         self.assertEqual(

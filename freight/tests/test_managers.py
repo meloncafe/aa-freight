@@ -40,17 +40,17 @@ class TestEveEntityManager(NoSocketsTestCase):
         for character in characters_data:
             esi_data[character["character_id"]] = {
                 "id": character["character_id"],
-                "category": EveEntity.Category.CHARACTER,
+                "category": EveEntity.CATEGORY_CHARACTER,
                 "name": character["character_name"],
             }
             esi_data[character["corporation_id"]] = {
                 "id": character["corporation_id"],
-                "category": EveEntity.Category.CORPORATION,
+                "category": EveEntity.CATEGORY_CORPORATION,
                 "name": character["corporation_name"],
             }
             esi_data[character["alliance_id"]] = {
                 "id": character["alliance_id"],
-                "category": EveEntity.Category.ALLIANCE,
+                "category": EveEntity.CATEGORY_ALLIANCE,
                 "name": character["alliance_name"],
             }
             EveCharacter.objects.create(**character)
@@ -79,7 +79,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         self.assertTrue(created)
         self.assertEqual(obj.id, 90000001)
         self.assertEqual(obj.name, "Bruce Wayne")
-        self.assertEqual(obj.category, EveEntity.Category.CHARACTER)
+        self.assertEqual(obj.category, EveEntity.CATEGORY_CHARACTER)
 
     @patch(MANAGERS_PATH + ".esi")
     def test_can_create_entity_when_not_found(self, mock_esi):
@@ -91,7 +91,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         self.assertTrue(created)
         self.assertEqual(obj.id, 90000001)
         self.assertEqual(obj.name, "Bruce Wayne")
-        self.assertEqual(obj.category, EveEntity.Category.CHARACTER)
+        self.assertEqual(obj.category, EveEntity.CATEGORY_CHARACTER)
 
     @patch(MANAGERS_PATH + ".esi")
     def test_can_update_entity(self, mock_esi):
@@ -100,13 +100,13 @@ class TestEveEntityManager(NoSocketsTestCase):
         )
         obj, _ = EveEntity.objects.update_or_create_from_esi(id=90000001)
         obj.name = "Blue Company"
-        obj.category = EveEntity.Category.CORPORATION
+        obj.category = EveEntity.CATEGORY_CORPORATION
 
         obj, created = EveEntity.objects.update_or_create_from_esi(id=90000001)
         self.assertFalse(created)
         self.assertEqual(obj.id, 90000001)
         self.assertEqual(obj.name, "Bruce Wayne")
-        self.assertEqual(obj.category, EveEntity.Category.CHARACTER)
+        self.assertEqual(obj.category, EveEntity.CATEGORY_CHARACTER)
 
     @patch(MANAGERS_PATH + ".esi")
     def test_raise_exception_if_entity_can_not_be_created(self, mock_esi):
@@ -119,19 +119,19 @@ class TestEveEntityManager(NoSocketsTestCase):
 
     def test_can_create_corporation_from_evecharacter(self):
         corporation, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            self.character, category=EveEntity.Category.CORPORATION
+            self.character, category=EveEntity.CATEGORY_CORPORATION
         )
         self.assertEqual(int(corporation.id), 92000001)
 
     def test_can_create_alliance_from_evecharacter(self):
         alliance, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            self.character, category=EveEntity.Category.ALLIANCE
+            self.character, category=EveEntity.CATEGORY_ALLIANCE
         )
         self.assertEqual(int(alliance.id), 93000001)
 
     def test_can_create_character_alliance_from_evecharacter(self):
         char2, _ = EveEntity.objects.update_or_create_from_evecharacter(
-            self.character, category=EveEntity.Category.CHARACTER
+            self.character, category=EveEntity.CATEGORY_CHARACTER
         )
         self.assertEqual(int(char2.id), 90000001)
 
@@ -139,7 +139,7 @@ class TestEveEntityManager(NoSocketsTestCase):
         character = EveCharacter.objects.get(character_id=90000005)
         with self.assertRaises(ValueError):
             EveEntity.objects.update_or_create_from_evecharacter(
-                character, category=EveEntity.Category.ALLIANCE
+                character, category=EveEntity.CATEGORY_ALLIANCE
             )
 
     def test_raises_exception_when_trying_to_create_invalid_category_from_evechar(self):
@@ -667,7 +667,7 @@ class TestContractManagerCreateFromDict(NoSocketsTestCase):
 
         mock_create_character.side_effect = create_character
         EveEntity.objects.create(
-            id=90000987, name="Dummy", category=EveEntity.Category.CHARACTER
+            id=90000987, name="Dummy", category=EveEntity.CATEGORY_CHARACTER
         )
         contract_dict = {
             "acceptor_id": 90000987,
@@ -708,7 +708,7 @@ class TestContractManagerCreateFromDict(NoSocketsTestCase):
     def test_sets_acceptor_to_none_if_it_cant_be_created(self, mock_create_character):
         mock_create_character.side_effect = RuntimeError
         EveEntity.objects.create(
-            id=90000987, name="Dummy", category=EveEntity.Category.CHARACTER
+            id=90000987, name="Dummy", category=EveEntity.CATEGORY_CHARACTER
         )
         contract_dict = {
             "acceptor_id": 90000987,

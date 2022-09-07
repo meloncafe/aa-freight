@@ -255,7 +255,7 @@ def setup_contract_handler(request, token):
     token_char = get_object_or_404(EveCharacter, character_id=token.character_id)
     if (
         Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE)
-        == EveEntity.Category.ALLIANCE
+        == EveEntity.CATEGORY_ALLIANCE
     ) and token_char.alliance_id is None:
         messages.error(
             request,

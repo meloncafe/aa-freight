@@ -468,7 +468,7 @@ class TestContract(NoSocketsTestCase):
         )
         cls.organization = EveEntity.objects.create(
             id=cls.character.alliance_id,
-            category=EveEntity.Category.ALLIANCE,
+            category=EveEntity.CATEGORY_ALLIANCE,
             name=cls.character.alliance_name,
         )
         cls.user = User.objects.create_user(
@@ -933,7 +933,7 @@ class TestContractHandler(NoSocketsTestCase):
         )
         self.organization = EveEntity.objects.create(
             id=self.character.alliance_id,
-            category=EveEntity.Category.ALLIANCE,
+            category=EveEntity.CATEGORY_ALLIANCE,
             name=self.character.alliance_name,
         )
         self.user = User.objects.create_user(
@@ -1493,7 +1493,7 @@ class TestContractCustomerNotification(NoSocketsTestCase):
         )
         cls.organization = EveEntity.objects.create(
             id=cls.character.alliance_id,
-            category=EveEntity.Category.ALLIANCE,
+            category=EveEntity.CATEGORY_ALLIANCE,
             name=cls.character.alliance_name,
         )
         cls.user = User.objects.create_user(
@@ -1566,19 +1566,19 @@ class TestFreight(NoSocketsTestCase):
     def test_get_category_for_operation_mode_1(self):
         self.assertEqual(
             Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE_MY_ALLIANCE),
-            EveEntity.Category.ALLIANCE,
+            EveEntity.CATEGORY_ALLIANCE,
         )
         self.assertEqual(
             Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE_MY_CORPORATION),
-            EveEntity.Category.CORPORATION,
+            EveEntity.CATEGORY_CORPORATION,
         )
         self.assertEqual(
             Freight.category_for_operation_mode(
                 FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE
             ),
-            EveEntity.Category.CORPORATION,
+            EveEntity.CATEGORY_CORPORATION,
         )
         self.assertEqual(
             Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE_CORP_PUBLIC),
-            EveEntity.Category.CORPORATION,
+            EveEntity.CATEGORY_CORPORATION,
         )

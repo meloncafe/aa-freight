@@ -96,8 +96,8 @@ class Freight(models.Model):
     def category_for_operation_mode(mode: str) -> str:
         """Eve Entity category for given operation mode."""
         if mode == FREIGHT_OPERATION_MODE_MY_ALLIANCE:
-            return EveEntity.Category.ALLIANCE
-        return EveEntity.Category.CORPORATION
+            return EveEntity.CATEGORY_ALLIANCE
+        return EveEntity.CATEGORY_CORPORATION
 
 
 class Location(models.Model):
@@ -541,23 +541,23 @@ class EveEntity(models.Model):
 
     @property
     def is_alliance(self) -> bool:
-        return self.category == self.Category.ALLIANCE
+        return self.category == self.CATEGORY_ALLIANCE
 
     @property
     def is_corporation(self) -> bool:
-        return self.category == self.Category.CORPORATION
+        return self.category == self.CATEGORY_CORPORATION
 
     @property
     def is_character(self) -> bool:
-        return self.category == self.Category.CHARACTER
+        return self.category == self.CATEGORY_CHARACTER
 
     def icon_url(self, size=AVATAR_SIZE) -> str:
         """Url to an icon image for this organization."""
-        if self.category == self.Category.ALLIANCE:
+        if self.category == self.CATEGORY_ALLIANCE:
             return EveAllianceInfo.generic_logo_url(self.id, size=size)
-        elif self.category == self.Category.CORPORATION:
+        elif self.category == self.CATEGORY_CORPORATION:
             return EveCorporationInfo.generic_logo_url(self.id, size=size)
-        elif self.category == self.Category.CHARACTER:
+        elif self.category == self.CATEGORY_CHARACTER:
             return EveCharacter.generic_portrait_url(self.id, size=size)
         raise NotImplementedError(
             "Avatar URL not implemented for category %s" % self.category

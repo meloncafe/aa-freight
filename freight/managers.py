@@ -467,7 +467,8 @@ class ContractManagerBase(models.Manager):
                 logger.debug("No new customer notifications.")
         else:
             logger.debug(
-                "FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL not configured or FREIGHT_DISCORDPROXY_ENABLED not enabled"
+                "FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL not configured "
+                "or FREIGHT_DISCORDPROXY_ENABLED not enabled"
             )
 
 

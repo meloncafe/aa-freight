@@ -15,11 +15,11 @@ from app_utils.testing import (
     NoSocketsTestCase,
     add_character_to_user_2,
     add_new_token,
+    generate_invalid_pk,
 )
 
 from freight.models import Contract, EveEntity, Location, Pricing
 
-from . import get_invalid_object_pk
 from .testdata import (
     characters_data,
     create_contract_handler_w_contracts,
@@ -897,7 +897,7 @@ class TestPricingManager(NoSocketsTestCase):
 
     def test_get_or_default_not_found(self):
         expected = self.p1
-        invalid_pk = get_invalid_object_pk(Pricing)
+        invalid_pk = generate_invalid_pk(Pricing)
         self.assertEqual(Pricing.objects.get_or_default(invalid_pk), expected)
 
     def test_get_or_default_with_none(self):

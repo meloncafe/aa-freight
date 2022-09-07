@@ -8,7 +8,7 @@ from esi.models import Token
 
 from allianceauth.eveonline.models import EveCharacter
 from allianceauth.tests.auth_utils import AuthUtils
-from app_utils.testing import NoSocketsTestCase, json_response_to_python
+from app_utils.testing import NoSocketsTestCase, add_new_token, json_response_to_python
 
 from .. import constants, views
 from ..app_settings import (
@@ -16,7 +16,6 @@ from ..app_settings import (
     FREIGHT_OPERATION_MODE_MY_CORPORATION,
 )
 from ..models import Contract, ContractHandler, Location
-from . import generate_token, store_as_Token
 from .testdata import create_contract_handler_w_contracts
 from .testdata.factories import create_pricing
 
@@ -490,13 +489,8 @@ class TestAddLocation(TestCase):
         mock_update_or_create_from_esi.return_value = location, False
 
         my_character = self.user.profile.main_character
-        token = store_as_Token(
-            generate_token(
-                character_id=my_character.character_id,
-                character_name=my_character.character_name,
-                scopes=["publicData"],
-            ),
-            self.user,
+        token = add_new_token(
+            user=self.user, character=my_character, scopes=["publicData"]
         )
         request = self.factory.post(
             reverse("freight:add_location_2"), data={"location_id": location_id}
@@ -526,13 +520,8 @@ class TestAddLocation(TestCase):
         mock_update_or_create_from_esi.side_effect = OSError("Test exception")
 
         my_character = self.user.profile.main_character
-        token = store_as_Token(
-            generate_token(
-                character_id=my_character.character_id,
-                character_name=my_character.character_name,
-                scopes=["publicData"],
-            ),
-            self.user,
+        token = add_new_token(
+            user=self.user, character=my_character, scopes=["publicData"]
         )
         request = self.factory.post(
             reverse("freight:add_location_2"), data={"location_id": location_id}

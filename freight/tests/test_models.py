@@ -1565,22 +1565,20 @@ class TestContractCustomerNotification(NoSocketsTestCase):
 class TestFreight(NoSocketsTestCase):
     def test_get_category_for_operation_mode_1(self):
         self.assertEqual(
-            Freight.get_category_for_operation_mode(FREIGHT_OPERATION_MODE_MY_ALLIANCE),
+            Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE_MY_ALLIANCE),
             EveEntity.Category.ALLIANCE,
         )
         self.assertEqual(
-            Freight.get_category_for_operation_mode(
-                FREIGHT_OPERATION_MODE_MY_CORPORATION
-            ),
+            Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE_MY_CORPORATION),
             EveEntity.Category.CORPORATION,
         )
         self.assertEqual(
-            Freight.get_category_for_operation_mode(
+            Freight.category_for_operation_mode(
                 FREIGHT_OPERATION_MODE_CORP_IN_ALLIANCE
             ),
             EveEntity.Category.CORPORATION,
         )
         self.assertEqual(
-            Freight.get_category_for_operation_mode(FREIGHT_OPERATION_MODE_CORP_PUBLIC),
+            Freight.category_for_operation_mode(FREIGHT_OPERATION_MODE_CORP_PUBLIC),
             EveEntity.Category.CORPORATION,
         )

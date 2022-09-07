@@ -94,8 +94,8 @@ class Freight(models.Model):
             return msg[0][1]
 
     @staticmethod
-    def get_category_for_operation_mode(mode: str) -> str:
-        """Organization category for given operation mode."""
+    def category_for_operation_mode(mode: str) -> str:
+        """Eve Entity category for given operation mode."""
         if mode == FREIGHT_OPERATION_MODE_MY_ALLIANCE:
             return EveEntity.Category.ALLIANCE
         return EveEntity.Category.CORPORATION

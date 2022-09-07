@@ -5,9 +5,10 @@ from django_webtest import WebTest
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.testing import NoSocketsTestCase
 
-from ..models import Contract, Location, Pricing
-from .testdata import create_contract_handler_w_contracts
+from freight.models import Contract, Location, Pricing
+
 from .testdata.factories import create_pricing
+from .testdata.helpers import create_contract_handler_w_contracts
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)

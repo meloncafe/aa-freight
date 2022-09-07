@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from ..templatetags.freight_filters import formatnumber, power10
+from freight.templatetags.freight_filters import formatnumber, power10
 
 
 class TestFilters(TestCase):

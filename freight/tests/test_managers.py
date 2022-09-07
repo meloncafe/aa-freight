@@ -20,13 +20,13 @@ from app_utils.testing import (
 
 from freight.models import Contract, EveEntity, Location, Pricing
 
-from .testdata import (
+from .testdata.factories import create_pricing
+from .testdata.helpers import (
     characters_data,
     create_contract_handler_w_contracts,
     create_locations,
     structures_data,
 )
-from .testdata.factories import create_pricing
 
 MANAGERS_PATH = "freight.managers"
 MODELS_PATH = "freight.models"

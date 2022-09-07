@@ -7,14 +7,15 @@ from django.test import TestCase
 
 from app_utils.testing import create_user_from_evecharacter
 
-from ..admin import ContractAdmin
-from ..models import Contract
-from ..tests.testdata import create_entities_from_characters, create_locations
+from freight.admin import ContractAdmin
+from freight.models import Contract
+
 from ..tests.testdata.factories import (
     create_contract,
     create_contract_handler,
     create_pricing,
 )
+from .testdata.helpers import create_entities_from_characters, create_locations
 
 MODULE_PATH = "freight.admin"
 

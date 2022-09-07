@@ -33,14 +33,14 @@ from freight.models import (
     Pricing,
 )
 
-from .testdata import (
+from .testdata.factories import create_pricing
+from .testdata.helpers import (
     characters_data,
     contracts_data,
     create_contract_handler_w_contracts,
     create_entities_from_characters,
     create_locations,
 )
-from .testdata.factories import create_pricing
 
 if "discord" in app_labels():
     from allianceauth.services.modules.discord.models import DiscordUser

@@ -7,7 +7,7 @@ from esi.errors import TokenInvalidError
 
 from app_utils.testing import NoSocketsTestCase, generate_invalid_pk
 
-from ..tasks import (
+from freight.tasks import (
     run_contracts_sync,
     send_contract_notifications,
     update_contracts_esi,
@@ -15,7 +15,8 @@ from ..tasks import (
     update_location,
     update_locations,
 )
-from .testdata import create_contract_handler_w_contracts
+
+from .testdata.helpers import create_contract_handler_w_contracts
 
 MODULE_PATH = "freight.tasks"
 

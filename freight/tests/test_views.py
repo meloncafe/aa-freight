@@ -10,14 +10,15 @@ from allianceauth.eveonline.models import EveCharacter
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.testing import NoSocketsTestCase, add_new_token, json_response_to_python
 
-from .. import constants, views
-from ..app_settings import (
+from freight import constants, views
+from freight.app_settings import (
     FREIGHT_OPERATION_MODE_MY_ALLIANCE,
     FREIGHT_OPERATION_MODE_MY_CORPORATION,
 )
-from ..models import Contract, ContractHandler, Location
-from .testdata import create_contract_handler_w_contracts
+from freight.models import Contract, ContractHandler, Location
+
 from .testdata.factories import create_pricing
+from .testdata.helpers import create_contract_handler_w_contracts
 
 MODULE_PATH = "freight.views"
 

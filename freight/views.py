@@ -234,6 +234,7 @@ def calculator(request, pricing_pk=None):
         "page_title": "Reward Calculator",
         "form": form,
         "pricing": pricing,
+        "has_pricing": Pricing.objects.exists(),
         "price": price,
         "organization_name": organization_name,
         "collateral": collateral if collateral is not None else 0,

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## Added
+
+- Show warning message on calculator when no pricing is defined
+
 ## [1.6.5] - 2022-07-19
 
 ## Changed

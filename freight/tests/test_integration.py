@@ -117,12 +117,11 @@ class TestCalculatorWeb2(WebTest):
     def test_can_handle_no_pricing(self):
         # given
         self.app.set_user(self.user)
-        response = self.app.get(reverse("freight:calculator"))
-        form = response.forms["form_calculator"]
         # when
-        response = form.submit()
+        response = self.app.get(reverse("freight:calculator"))
         # then
-        self.assertIn("This field is required", response.text)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("No pricing/routes defined!", response.text)
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)

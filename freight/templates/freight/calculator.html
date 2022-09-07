@@ -15,19 +15,24 @@
                         <h3 class="panel-title">Calculator</h3>
                     </div>
                     <div class="panel-body">
-                        {{ form|bootstrap }}
-                        <br>
-                        <p><strong>Reward</strong></p>
-                        <h2 id="text_price">
-                            <span id="text_price_2">{{ price|formatnumber:"0"|default_if_none:"-" }} ISK</span>
-                            <span class="copy_to_clipboard" data-text="{{ price }}">
-                                &nbsp;&nbsp;<i class="far fa-copy"></i></span>
-                            </span>
-                        </h2>
-                            <button class="btn btn-success btn-lg" type="submit">Click To Calculate Reward!</button>
+                        {% if has_pricing %}
+                            {{ form|bootstrap }}
+                            <br>
+                            <p><strong>Reward</strong></p>
+                            <h2 id="text_price">
+                                <span id="text_price_2">{{ price|formatnumber:"0"|default_if_none:"-" }} ISK</span>
+                                <span class="copy_to_clipboard" data-text="{{ price }}">
+                                    &nbsp;&nbsp;<i class="far fa-copy"></i></span>
+                                </span>
+                            </h2>
+                                <button class="btn btn-success btn-lg" type="submit">Click To Calculate Reward!</button>
+                        {% else %}
+                            <p class="text-warning">Please define a pricing/route!</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
+
             <div class="col-md-6">
 
                 <div class="panel panel-default">
@@ -113,9 +118,7 @@
                             </dl>
 
                         {% else %}
-
-                            <p class="text-muted">No pricing defined</p>
-
+                            <p class="text-warning">Please define a pricing/route!</p>
                         {% endif %}
 
                     </div>
@@ -200,6 +203,7 @@
 
             </div>
         </div>
+
     </form>
 <br>
 

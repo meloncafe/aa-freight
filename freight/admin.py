@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from . import tasks
 from .models import (
@@ -35,7 +36,7 @@ class LocationAdmin(admin.ModelAdmin):
     def has_change_permission(self, *args, **kwargs):
         return False
 
-    @admin.display(description="Update selected locations from ESI")
+    @admin.display(description=_("Update selected locations from ESI"))
     def update_location(self, request, queryset):
         location_ids = list()
         for obj in queryset:
@@ -45,8 +46,11 @@ class LocationAdmin(admin.ModelAdmin):
         self.message_user(
             request,
             (
-                f"Started updating {len(location_ids)} locations. "
-                "This can take a short while to complete."
+                _(
+                    "Started updating %d locations. "
+                    "This can take a short while to complete."
+                )
+                % len(location_ids)
             ),
         )
 
@@ -105,24 +109,27 @@ class ContractHandlerAdmin(admin.ModelAdmin):
     def _is_sync_ok(self, obj):
         return obj.is_sync_ok
 
-    @admin.display(description="Fetch contracts from Eve Online server")
+    @admin.display(description=_("Fetch contracts from Eve Online server"))
     def start_sync(self, request, queryset):
         for obj in queryset:
             tasks.run_contracts_sync.delay(force_sync=True, user_pk=request.user.pk)
             text = (
-                f"Started syncing contracts for: {obj} "
-                "You will receive a report once it is completed."
+                _(
+                    "Started syncing contracts for: %s "
+                    "You will receive a report once it is completed."
+                )
+                % obj
             )
             self.message_user(request, text)
 
-    @admin.display(description="Send notifications for outstanding contracts")
+    @admin.display(description=_("Send notifications for outstanding contracts"))
     def send_notifications(self, request, queryset):
         for obj in queryset:
             tasks.send_contract_notifications.delay(force_sent=True)
-            text = f"Started sending notifications for: {obj} "
+            text = _("Started sending notifications for: %s ") % obj
             self.message_user(request, text)
 
-    @admin.display(description="Update pricing info for all contracts")
+    @admin.display(description=_("Update pricing info for all contracts"))
     def update_pricing(self, request, queryset):
         del queryset
         tasks.update_contracts_pricing.delay()
@@ -178,25 +185,27 @@ class ContractAdmin(admin.ModelAdmin):
         return ", ".join(sorted(notifications, reverse=True))
 
     @admin.display(
-        description="Sent pilots notification for selected contracts to Discord"
+        description=_("Sent pilots notification for selected contracts to Discord")
     )
     def send_pilots_notification(self, request, queryset):
         for obj in queryset:
             obj.send_pilot_notification()
             self.message_user(
                 request,
-                f"Sent pilots notification for contract {obj.contract_id} to Discord",
+                _("Sent pilots notification for contract %d to Discord")
+                % obj.contract_id,
             )
 
     @admin.display(
-        description="Sent customer notification for selected contracts to Discord"
+        description=_("Sent customer notification for selected contracts to Discord")
     )
     def send_customer_notification(self, request, queryset):
         for obj in queryset:
             obj.send_customer_notification(force_sent=True)
             self.message_user(
                 request,
-                f"Sent customer notification for contract {obj.contract_id} to Discord",
+                _("Sent customer notification for contract %d to Discord")
+                % obj.contract_id,
             )
 
     def has_add_permission(self, *args, **kwargs):

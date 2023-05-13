@@ -7,7 +7,11 @@
     <form class="form" action="{% url 'freight:add_location_2' %}" method="POST">
         {% csrf_token %}
         {{ form|bootstrap }}
-        <button class="btn btn-success btn-block" type="submit">Add / Update Location</button>
-        <p class="text-muted">Accessing structures with token from <strong>{{ token_char_name }}</strong></p>
+        <button class="btn btn-success btn-block" type="submit">
+            {% translate "Add / Update Location" %}
+        </button>
+        <p class="text-muted">
+            {% blocktranslate %}Accessing structures with token from {{ token_char_name }}{% end blocktranslate %}
+        </p>
     </form>
 {% endblock %}

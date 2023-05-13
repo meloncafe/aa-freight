@@ -12,22 +12,28 @@
             <div class="col-md-6">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title">Calculator</h3>
+                        <h3 class="panel-title">{% translate "Calculator" %}</h3>
                     </div>
                     <div class="panel-body">
                         {% if has_pricing %}
                             {{ form|bootstrap }}
                             <br>
-                            <p><strong>Reward</strong></p>
+                            <p><strong>{% translate "Reward" %}</strong></p>
                             <h2 id="text_price">
-                                <span id="text_price_2">{{ price|formatnumber:"0"|default_if_none:"-" }} ISK</span>
+                                <span id="text_price_2">{{ price|formatnumber:"0"|default_if_none:"-" }}
+                                    &nbsp;{% translate "ISK" %}
+                                </span>
                                 <span class="copy_to_clipboard" data-text="{{ price }}">
                                     &nbsp;&nbsp;<i class="far fa-copy"></i></span>
                                 </span>
                             </h2>
-                                <button class="btn btn-success btn-lg" type="submit">Click To Calculate Reward!</button>
+                                <button class="btn btn-success btn-lg" type="submit">
+                                    {% translate "Click To Calculate Reward!" %}
+                                </button>
                         {% else %}
-                            <p class="text-warning">Please define a pricing/route!</p>
+                            <p class="text-warning">
+                                {% translate "Please define a pricing/route!" %}
+                            </p>
                         {% endif %}
                     </div>
                 </div>
@@ -37,7 +43,7 @@
 
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title">Pricing details</h3>
+                        <h3 class="panel-title">{% translate "Pricing details" %}</h3>
                     </div>
 
                     <div class="panel-body" style="min-height: 100px;">
@@ -45,80 +51,99 @@
                         {% if pricing %}
                             <dl class="dl-horizontal">
                                 {% if pricing.is_bidirectional %}
-                                    <dt>From / To:</dt>
+                                    <dt>{% translate "From / To:" %}</dt>
                                 {% else %}
-                                    <dt>From:</dt>
+                                    <dt>{% translate "From:" %}</dt>
                                 {% endif %}
 
                                 <dd>{{ pricing.start_location }}</dd>
 
                                 {% if pricing.is_bidirectional %}
-                                    <dt>From / To:</dt>
+                                    <dt>{% translate "From / To:" %}</dt>
                                 {% else %}
-                                    <dt>To:</dt>
+                                    <dt>{% translate "To:" %}</dt>
                                 {% endif %}
                                 <dd>{{ pricing.end_location }}</dd>
 
-                                <dt>Both directions:</dt>
+                                <dt><dt>{% translate "Both directions:" %}</dt></dt>
                                 <dd>{{ pricing.is_bidirectional|yesno }}</dd>
                                 <br>
 
                                 {% if pricing.price_min != None %}
-                                    <dt>Minimum price:</dt>
-                                    <dd>{{ pricing.price_min|formatnumber:"0" }} ISK</dd>
+                                    <dt>{% translate "Minimum price:" %}</dt>
+                                    <dd>
+                                        {{ pricing.price_min|formatnumber:"0" }}&nbsp;{% translate "ISK" %}
+                                    </dd>
                                 {% endif %}
 
                                 {% if pricing.price_base != None %}
                                     {% if pricing.is_fix_price %}
-                                        <dt>Fix price:</dt>
+                                        <dt>{% translate "Fix price:" %}</dt>
                                     {% else %}
-                                        <dt>Base price:</dt>
+                                        <dt>{% translate "Base price:" %}</dt>
                                     {% endif %}
-                                    <dd>{{ pricing.price_base|formatnumber:"0" }} ISK</dd>
+                                    <dd>{{ pricing.price_base|formatnumber:"0" }}
+                                        &nbsp;{% translate "ISK" %}
+                                    </dd>
                                 {% endif %}
 
                                 {% if pricing_price_per_volume_eff != None %}
-                                    <dt>Price add-on per m3:</dt>
-                                    <dd>{{ pricing_price_per_volume_eff|formatnumber:"0" }} ISK</dd>
+                                    <dt>{% translate "Price add-on per m3:" %}</dt>
+                                    <dd>
+                                        {{ pricing_price_per_volume_eff|formatnumber:"0" }}
+                                        &nbsp;{% translate "ISK" %}
+                                    </dd>
                                 {% endif %}
 
                                 {% if pricing.price_per_collateral_percent != None %}
-                                    <dt>Price add-on collateral:</dt>
+                                    <dt>{% translate "Price add-on collateral:" %}</dt>
                                     <dd>{{ pricing.price_per_collateral_percent }} %</dd>
                                 {% endif %}
 
                                 <br>
                                 {% if pricing.volume_min != None %}
-                                    <dt>Min Volume:</dt>
-                                    <dd>{{ pricing.volume_min|formatnumber:"0"|default_if_none:"-" }} m3</dd>
+                                    <dt>{% translate "Min Volume:" %}</dt>
+                                    <dd>
+                                        {{ pricing.volume_min|formatnumber:"0"|default_if_none:"-" }}
+                                        &nbsp;{% translate "m3" %}
+                                    </dd>
                                 {% endif %}
 
                                 {% if pricing.volume_max != None %}
-                                    <dt>Max Volume:</dt>
-                                    <dd>{{ pricing.volume_max|formatnumber:"0"|default_if_none:"-" }} m3</dd>
+                                    <dt>{% translate "Max Volume:" %}</dt>
+                                    <dd>
+                                        {{ pricing.volume_max|formatnumber:"0"|default_if_none:"-" }}
+                                        &nbsp;{% translate "m3" %}
+                                    </dd>
                                 {% endif %}
 
                                 {% if pricing.collateral_min != None %}
-                                    <dt>Min. Collateral:</dt>
-                                    <dd>{{ pricing.collateral_min|formatnumber:"0" }} ISK</dd>
+                                    <dt>{% translate "Min. Collateral:" %}</dt>
+                                    <dd>
+                                        {{ pricing.collateral_min|formatnumber:"0" }}
+                                        &nbsp;{% translate "ISK" %}
+                                    </dd>
                                 {% endif %}
 
                                 {% if pricing.collateral_max != None %}
-                                    <dt>Max. Collateral:</dt>
-                                    <dd>{{ pricing.collateral_max|formatnumber:"0" }} ISK</dd>
+                                    <dt>{% translate "Max. Collateral:" %}</dt>
+                                    <dd>
+                                        {{ pricing.collateral_max|formatnumber:"0" }}
+                                        &nbsp;{% translate "ISK" %}
+                                    </dd>
                                 {% endif %}
 
                                 <br>
 
                                 {% if pricing.details %}
-                                    <dt>Additional Instructions:</dt>
+                                    <dt>{% translate "Additional Instructions:" %}</dt>
                                     <dd>{{ pricing.details|linebreaks }}</dd>
                                 {% endif %}
 
                             </dl>
 
                         {% else %}
-                            <p class="text-warning">Please define a pricing/route!</p>
+                            <p class="text-warning">{% translate "Please define a pricing/route!" %}</p>
                         {% endif %}
 
                     </div>
@@ -126,18 +151,18 @@
 
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title">Your contract</h3>
+                        <h3 class="panel-title">{% translate "Your contract" %}</h3>
                     </div>
                     <div class="panel-body" style="min-height: 100px;">
                         {% if price != None %}
                             <dl class="dl-horizontal">
-                                <dt>Contract Type:</dt>
-                                <dd>Courier</dd>
+                                <dt>{% translate "Contract Type:" %}</dt>
+                                <dd>{% translate "Courier" %}</dd>
 
-                                <dt>Availability:</dt>
+                                <dt>{% translate "Availability:" %}</dt>
                                 <dd>{{ availability }}</dd>
 
-                                <dt>Location:</dt>
+                                <dt>{% translate "Location:" %}</dt>
                                 <dd>
                                     {{ pricing.start_location }}
                                     <span class="copy_to_clipboard" data-text="{{ pricing.start_location }}">
@@ -147,7 +172,7 @@
 
                                 <hr>
 
-                                <dt>Ship To:</dt>
+                                <dt>{% translate "Ship To:" %}</dt>
                                 <dd>
                                     {{ pricing.end_location }}
                                     <span class="copy_to_clipboard" data-text="{{ pricing.end_location }}">
@@ -155,29 +180,31 @@
                                     </span>
                                 </dd>
 
-                                <dt>Reward:</dt>
+                                <dt>{% translate "Reward:" %}</dt>
                                 <dd>
-                                    {{ price|formatnumber:"0"|default_if_none:"???" }} ISK
+                                    {{ price|formatnumber:"0"|default_if_none:"???" }}
+                                    &nbsp;{% translate "ISK" %}
                                     <span class="copy_to_clipboard" data-text="{{ price }}">
                                         &nbsp;&nbsp;<i class="far fa-copy"></i></span>
                                     </span>
                                 </dd>
 
-                                <dt>Collateral:</dt>
+                                <dt>{% translate "Collateral:" %}</dt>
                                 <dd>
-                                    {{ collateral|formatnumber:"0"|default_if_none:"???" }} ISK
+                                    {{ collateral|formatnumber:"0"|default_if_none:"???" }}
+                                    &nbsp;{% translate "ISK" %}
                                     <span class="copy_to_clipboard" data-text="{{ collateral }}">
                                         &nbsp;&nbsp;<i class="far fa-copy"></i></span>
                                     </span>
                                 </dd>
 
                                 {% if pricing.days_to_expire %}
-                                    <dt>Expiration:</dt>
-                                    <dd>{{ pricing.days_to_expire }} days ({{ expires_on|date:'Y-m-d' }})</dd>
+                                    <dt>{% translate "Expiration:" %}</dt>
+                                    <dd>{{ pricing.days_to_expire }} {% translate "days" %} ({{ expires_on|date:'Y-m-d' }})</dd>
                                 {% endif %}
 
                                 {% if pricing.days_to_complete %}
-                                    <dt>Days to complete:</dt>
+                                    <dt>{% translate "Days to complete:" %}</dt>
                                     <dd>
                                         {{ pricing.days_to_complete|default_if_none:"-" }}
                                         <span class="copy_to_clipboard" data-text="{{ pricing.days_to_complete }}">
@@ -187,16 +214,19 @@
                                 {% endif %}
 
                                 {% if pricing.requires_volume %}
-                                    <dt>Volume:</dt>
-                                    <dd>{{ volume|formatnumber:"0"|default_if_none:"???" }} m3</dd>
+                                    <dt>{% translate "Volume:" %}</dt>
+                                    <dd>
+                                        {{ volume|formatnumber:"0"|default_if_none:"???" }}
+                                        &nbsp;{% translate "m3" %}
+                                    </dd>
                                 {% endif %}
 
                                 <hr>
-                                Note that this route is bidirectional, so Location and Destination can be switched.
+                                {% translate "Note that this route is bidirectional, so Location and Destination can be switched." %}
                             </dl>
 
                         {% else %}
-                            <p class="text-muted">No price calculated yet</p>
+                            <p class="text-muted">{% translate "No price calculated yet" %}</p>
                         {% endif %}
                     </div>
                 </div>

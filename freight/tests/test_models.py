@@ -558,7 +558,6 @@ class TestContract(NoSocketsTestCase):
         self.assertTrue(self.contract.has_stale_status)
 
     def test_acceptor_name(self):
-
         contract = self.contract
         self.assertIsNone(contract.acceptor_name)
 

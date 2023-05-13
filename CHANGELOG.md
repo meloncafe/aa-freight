@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.8.0] - 2023-05-13
+
+### Added
+
+- Full localization with setup for Transifex
+
 ### Changed
 
 - Migrated build process to PEP 621

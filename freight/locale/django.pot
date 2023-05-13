@@ -1,0 +1,342 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-05-13 16:48+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: admin.py:39
+msgid "Update selected locations from ESI"
+msgstr ""
+
+#: admin.py:50
+#, python-format
+msgid "Started updating %d locations. This can take a short while to complete."
+msgstr ""
+
+#: admin.py:112
+msgid "Fetch contracts from Eve Online server"
+msgstr ""
+
+#: admin.py:118
+#, python-format
+msgid ""
+"Started syncing contracts for: %s You will receive a report once it is "
+"completed."
+msgstr ""
+
+#: admin.py:125
+msgid "Send notifications for outstanding contracts"
+msgstr ""
+
+#: admin.py:129
+#, python-format
+msgid "Started sending notifications for: %s "
+msgstr ""
+
+#: admin.py:132
+msgid "Update pricing info for all contracts"
+msgstr ""
+
+#: admin.py:188
+msgid "Sent pilots notification for selected contracts to Discord"
+msgstr ""
+
+#: admin.py:195
+#, python-format
+msgid "Sent pilots notification for contract %d to Discord"
+msgstr ""
+
+#: admin.py:200
+msgid "Sent customer notification for selected contracts to Discord"
+msgstr ""
+
+#: admin.py:207
+#, python-format
+msgid "Sent customer notification for contract %d to Discord"
+msgstr ""
+
+#: templates/freight/add_location.html:11
+msgid "Add / Update Location"
+msgstr ""
+
+#: templates/freight/add_location.html:14
+#, python-format
+msgid "Accessing structures with token from %(token_char_name)s"
+msgstr ""
+
+#: templates/freight/calculator.html:15
+msgid "Calculator"
+msgstr ""
+
+#: templates/freight/calculator.html:21
+msgid "Reward"
+msgstr ""
+
+#: templates/freight/calculator.html:24 templates/freight/calculator.html:75
+#: templates/freight/calculator.html:86 templates/freight/calculator.html:94
+#: templates/freight/calculator.html:124 templates/freight/calculator.html:132
+#: templates/freight/calculator.html:186 templates/freight/calculator.html:195
+msgid "ISK"
+msgstr ""
+
+#: templates/freight/calculator.html:31
+msgid "Click To Calculate Reward!"
+msgstr ""
+
+#: templates/freight/calculator.html:35 templates/freight/calculator.html:146
+msgid "Please define a pricing/route!"
+msgstr ""
+
+#: templates/freight/calculator.html:46
+msgid "Pricing details"
+msgstr ""
+
+#: templates/freight/calculator.html:54 templates/freight/calculator.html:62
+msgid "From / To:"
+msgstr ""
+
+#: templates/freight/calculator.html:56
+msgid "From:"
+msgstr ""
+
+#: templates/freight/calculator.html:64
+msgid "To:"
+msgstr ""
+
+#: templates/freight/calculator.html:68
+msgid "Both directions:"
+msgstr ""
+
+#: templates/freight/calculator.html:73
+msgid "Minimum price:"
+msgstr ""
+
+#: templates/freight/calculator.html:81
+msgid "Fix price:"
+msgstr ""
+
+#: templates/freight/calculator.html:83
+msgid "Base price:"
+msgstr ""
+
+#: templates/freight/calculator.html:91
+msgid "Price add-on per m3:"
+msgstr ""
+
+#: templates/freight/calculator.html:99
+msgid "Price add-on collateral:"
+msgstr ""
+
+#: templates/freight/calculator.html:105
+msgid "Min Volume:"
+msgstr ""
+
+#: templates/freight/calculator.html:108 templates/freight/calculator.html:116
+#: templates/freight/calculator.html:220
+msgid "m3"
+msgstr ""
+
+#: templates/freight/calculator.html:113
+msgid "Max Volume:"
+msgstr ""
+
+#: templates/freight/calculator.html:121
+msgid "Min. Collateral:"
+msgstr ""
+
+#: templates/freight/calculator.html:129
+msgid "Max. Collateral:"
+msgstr ""
+
+#: templates/freight/calculator.html:139
+msgid "Additional Instructions:"
+msgstr ""
+
+#: templates/freight/calculator.html:154
+msgid "Your contract"
+msgstr ""
+
+#: templates/freight/calculator.html:159
+msgid "Contract Type:"
+msgstr ""
+
+#: templates/freight/calculator.html:160
+msgid "Courier"
+msgstr ""
+
+#: templates/freight/calculator.html:162
+msgid "Availability:"
+msgstr ""
+
+#: templates/freight/calculator.html:165
+msgid "Location:"
+msgstr ""
+
+#: templates/freight/calculator.html:175
+msgid "Ship To:"
+msgstr ""
+
+#: templates/freight/calculator.html:183
+msgid "Reward:"
+msgstr ""
+
+#: templates/freight/calculator.html:192
+msgid "Collateral:"
+msgstr ""
+
+#: templates/freight/calculator.html:202
+msgid "Expiration:"
+msgstr ""
+
+#: templates/freight/calculator.html:203
+msgid "days"
+msgstr ""
+
+#: templates/freight/calculator.html:207
+msgid "Days to complete:"
+msgstr ""
+
+#: templates/freight/calculator.html:217
+msgid "Volume:"
+msgstr ""
+
+#: templates/freight/calculator.html:225
+msgid ""
+"Note that this route is bidirectional, so Location and Destination can be "
+"switched."
+msgstr ""
+
+#: templates/freight/calculator.html:229
+msgid "No price calculated yet"
+msgstr ""
+
+#: templates/freight/contracts_all.html:12
+msgid "Active"
+msgstr ""
+
+#: templates/freight/contracts_all.html:17
+msgid "All"
+msgstr ""
+
+#: templates/freight/partials/menu.html:9
+msgid "Toggle navigation"
+msgstr ""
+
+#: templates/freight/statistics.html:12
+msgid "Routes"
+msgstr ""
+
+#: templates/freight/statistics.html:17 templates/freight/statistics.html:51
+msgid "Pilots"
+msgstr ""
+
+#: templates/freight/statistics.html:26
+msgid "Pilot Corporations"
+msgstr ""
+
+#: templates/freight/statistics.html:31 templates/freight/statistics.html:52
+msgid "Customers"
+msgstr ""
+
+#: templates/freight/statistics.html:46 templates/freight/statistics.html:77
+#: templates/freight/statistics.html:108 templates/freight/statistics.html:139
+msgid "Name"
+msgstr ""
+
+#: templates/freight/statistics.html:47 templates/freight/statistics.html:79
+#: templates/freight/statistics.html:110 templates/freight/statistics.html:141
+msgid "Contracts"
+msgstr ""
+
+#: templates/freight/statistics.html:48 templates/freight/statistics.html:80
+#: templates/freight/statistics.html:111 templates/freight/statistics.html:142
+msgid "Rewards"
+msgstr ""
+
+#: templates/freight/statistics.html:49 templates/freight/statistics.html:81
+#: templates/freight/statistics.html:112 templates/freight/statistics.html:143
+msgid "Collaterals"
+msgstr ""
+
+#: templates/freight/statistics.html:50 templates/freight/statistics.html:82
+#: templates/freight/statistics.html:113 templates/freight/statistics.html:144
+msgid "Volume"
+msgstr ""
+
+#: templates/freight/statistics.html:58 templates/freight/statistics.html:88
+#: templates/freight/statistics.html:119 templates/freight/statistics.html:150
+msgid "Totals"
+msgstr ""
+
+#: templates/freight/statistics.html:78 templates/freight/statistics.html:140
+msgid "Corporation"
+msgstr ""
+
+#: templates/freight/statistics.html:109
+msgid "Alliance"
+msgstr ""
+
+#: templates/freight/statistics.html:166
+#, python-format
+msgid ""
+"\n"
+"            Statistics calculated for all contracts finished withn the last "
+"%(max_days)s days\n"
+"        "
+msgstr ""
+
+#: views.py:266
+#, python-format
+msgid ""
+"Can not setup contract handler, because %s is not a member of any alliance"
+msgstr ""
+
+#: views.py:283
+#, python-format
+msgid ""
+"You can only use your main or alt characters to setup the contract handler. "
+"However, character %s is neither. "
+msgstr ""
+
+#: views.py:297
+msgid ""
+"There already is a contract handler installed for a different operation "
+"mode. You need to first delete the existing contract handler in the admin "
+"section before you can set up this app for a different operation mode."
+msgstr ""
+
+#: views.py:321
+#, python-format
+msgid ""
+"Contract Handler setup started for %(organization)s organization with "
+"%(character)s as sync character. Operation mode: %(operation_mode)s. Started "
+"syncing of courier contracts. You will receive a report once it is completed."
+msgstr ""
+
+#: views.py:368
+#, python-format
+msgid ""
+"Failed to add location with token from %(character)s for location ID %(id)s: "
+"%(error)s"
+msgstr ""
+
+#: views.py:378
+msgid "Added:"
+msgstr ""
+
+#: views.py:378
+msgid "Updated:"
+msgstr ""

@@ -1,3 +1,5 @@
+import re
+
 from django.test import override_settings
 from django.urls import reverse
 from django_webtest import WebTest
@@ -9,6 +11,8 @@ from freight.models import Contract, Location, Pricing
 
 from .testdata.factories import create_pricing
 from .testdata.helpers import create_contract_handler_w_contracts
+
+_RE_COMBINE_WHITESPACE = re.compile(r"\s+")
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
@@ -62,7 +66,10 @@ class TestCalculatorWeb(WebTest):
         form = response.forms["form_calculator"]
 
         # extract the price string
-        price_str = response.html.find(id="text_price_2").string.strip()
+        price_str = response.html.find(id="text_price_2").string
+        price_str = _RE_COMBINE_WHITESPACE.sub(
+            " ", price_str
+        ).strip()  # remove whitespaces to one
         return price_str, form, response
 
     def test_can_calculate_pricing_1(self):

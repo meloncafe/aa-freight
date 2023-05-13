@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.8.0] - 2023-05-13
+
+### Added
+
+- Full localization with setup for Transifex
+
+### Changed
+
+- Migrated build process to PEP 621
+- Added support for AA3 and dropped support for AA2
+- Added support for Python 3.10 & 3.11 and dropped support for Python 3.7
+- Minimum required Python version is now 3.8
+
 ## [1.7.1] - 2022-09-07
 
 ### Changed

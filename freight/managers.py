@@ -413,7 +413,7 @@ class ContractManagerBase(models.Manager):
         if FREIGHT_DISCORD_WEBHOOK_URL:
             contracts_qs = self.filter(status__exact=self.model.Status.OUTSTANDING)
             if not FREIGHT_NOTIFY_ALL_CONTRACTS:
-                contracts_qs.exclude(pricing__exact=None)
+                contracts_qs = contracts_qs.exclude(pricing__exact=None)
             if not force_sent:
                 contracts_qs = contracts_qs.filter(date_notified__exact=None)
             contracts_qs = contracts_qs.select_related()
@@ -432,7 +432,7 @@ class ContractManagerBase(models.Manager):
                 status__in=self.model.Status.for_customer_notification
             )
             if not FREIGHT_NOTIFY_ALL_CONTRACTS:
-                contracts_qs.exclude(pricing__exact=None)
+                contracts_qs = contracts_qs.exclude(pricing__exact=None)
             contracts_qs = contracts_qs.select_related()
             if contracts_qs.count() > 0:
                 contracts_qs.sent_customer_notifications(

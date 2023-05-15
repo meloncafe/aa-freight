@@ -77,3 +77,6 @@ FREIGHT_DISCORDPROXY_ENABLED = clean_setting("FREIGHT_DISCORDPROXY_ENABLED", Fal
 
 # Discordproxy port for GRPC
 FREIGHT_DISCORDPROXY_PORT = clean_setting("FREIGHT_DISCORDPROXY_PORT", 50051)
+
+# Send discord notifications about every contract, even if no pricing defined
+FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS = clean_setting("FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS", False)

@@ -20,6 +20,7 @@ from .app_settings import (
     FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL,
     FREIGHT_DISCORD_WEBHOOK_URL,
     FREIGHT_DISCORDPROXY_ENABLED,
+    FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS,
 )
 from .providers import esi
 
@@ -396,11 +397,12 @@ class ContractManagerBase(models.Manager):
         if (
             self.count() > 0
             and Pricing.objects.exists()
-            and not self.filter(pricing__isnull=False).exists()
+            and (not self.filter(pricing__isnull=False).exists() or FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS)
         ):
             logger.info(
                 "There are no notifications to send, "
-                "because none of the existing contracts have a valid pricing."
+                "because none of the existing contracts have a valid pricing"
+                "and FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS option is set to False."
             )
             return
         self._sent_pilot_notifications(force_sent, rate_limited)
@@ -410,7 +412,9 @@ class ContractManagerBase(models.Manager):
         if FREIGHT_DISCORD_WEBHOOK_URL:
             contracts_qs = self.filter(
                 status__exact=self.model.Status.OUTSTANDING
-            ).exclude(pricing__exact=None)
+            )
+            if not FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS:
+                contracts_qs.exclude(pricing__exact=None)
             if not force_sent:
                 contracts_qs = contracts_qs.filter(date_notified__exact=None)
             contracts_qs = contracts_qs.select_related()
@@ -427,7 +431,9 @@ class ContractManagerBase(models.Manager):
         if FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL or FREIGHT_DISCORDPROXY_ENABLED:
             contracts_qs = self.filter(
                 status__in=self.model.Status.for_customer_notification
-            ).exclude(pricing__exact=None)
+            )
+            if not FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS:
+                contracts_qs.exclude(pricing__exact=None)
             contracts_qs = contracts_qs.select_related()
             if contracts_qs.count() > 0:
                 contracts_qs.sent_customer_notifications(

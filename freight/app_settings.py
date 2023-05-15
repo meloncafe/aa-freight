@@ -9,7 +9,6 @@ FREIGHT_CONTRACT_SYNC_GRACE_MINUTES = clean_setting(
     "FREIGHT_CONTRACT_SYNC_GRACE_MINUTES", 30
 )
 
-
 # Webhook URL used for notifications if defined
 FREIGHT_DISCORD_WEBHOOK_URL = clean_setting(
     "FREIGHT_DISCORD_WEBHOOK_URL", None, required_type=str
@@ -77,3 +76,6 @@ FREIGHT_DISCORDPROXY_ENABLED = clean_setting("FREIGHT_DISCORDPROXY_ENABLED", Fal
 
 # Discordproxy port for GRPC
 FREIGHT_DISCORDPROXY_PORT = clean_setting("FREIGHT_DISCORDPROXY_PORT", 50051)
+
+# Send discord notifications about every contract, even if no pricing defined
+FREIGHT_NOTIFY_ALL_CONTRACTS = clean_setting("FREIGHT_NOTIFY_ALL_CONTRACTS", False)

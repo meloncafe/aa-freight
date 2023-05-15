@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] - yyyy-mm-dd
 
+## [1.9.0] - 2023-05-15
+
+### Added
+
+- Ability to notify about all courier contracts, incl. those with "wrong" routes.
+
+Thanks @Windstep1 for the contribution!
+
 ## [1.8.0] - 2023-05-13
 
 ### Added

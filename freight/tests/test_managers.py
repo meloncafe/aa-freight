@@ -732,7 +732,9 @@ if "discord" in app_labels():
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
         @patch(MODELS_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", False)
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS", True)
-        def test_send_pilot_notifications_if_invalid_route_set_but_global_option_enabled(self, mock_webhook_execute):
+        def test_send_pilot_notifications_if_invalid_route_set_but_global_option_enabled(
+            self, mock_webhook_execute
+        ):
             x = Contract.objects.filter(status=Contract.Status.OUTSTANDING).first()
             Contract.objects.all().exclude(pk=x.pk).delete()
             x.end_location_id = 1041839499541
@@ -746,7 +748,9 @@ if "discord" in app_labels():
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
         @patch(MODELS_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", False)
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS", False)
-        def test_send_pilot_notifications_if_invalid_route_set_and_global_option_disabled(self, mock_webhook_execute):
+        def test_send_pilot_notifications_if_invalid_route_set_and_global_option_disabled(
+            self, mock_webhook_execute
+        ):
             x = Contract.objects.filter(status=Contract.Status.OUTSTANDING).first()
             Contract.objects.all().exclude(pk=x.pk).delete()
             x.end_location_id = 1041839499541
@@ -853,7 +857,9 @@ if "discord" in app_labels():
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
         @patch(MODELS_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", False)
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS", True)
-        def test_send_customer_notification_if_invalid_route_set_but_global_option_enabled(self, mock_webhook_execute):
+        def test_send_customer_notification_if_invalid_route_set_but_global_option_enabled(
+            self, mock_webhook_execute
+        ):
             x = Contract.objects.filter(status=Contract.Status.OUTSTANDING).first()
             Contract.objects.all().exclude(pk=x.pk).delete()
             x.end_location_id = 1041839499541
@@ -867,13 +873,16 @@ if "discord" in app_labels():
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None)
         @patch(MODELS_PATH + ".FREIGHT_DISCORDPROXY_ENABLED", False)
         @patch(MODELS_PATH + ".FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS", False)
-        def test_send_customer_notification_if_invalid_route_set_and_global_option_disabled(self, mock_webhook_execute):
+        def test_send_customer_notification_if_invalid_route_set_and_global_option_disabled(
+            self, mock_webhook_execute
+        ):
             x = Contract.objects.filter(status=Contract.Status.OUTSTANDING).first()
             Contract.objects.all().exclude(pk=x.pk).delete()
             x.end_location_id = 1041839499541
             x.save()
             Contract.objects.send_notifications(rate_limited=False)
             self.assertEqual(mock_webhook_execute.call_count, 0)
+
 
 class TestPricingManager(NoSocketsTestCase):
     @classmethod

@@ -18,9 +18,9 @@ from app_utils.logging import LoggerAddTag
 from . import __title__, constants
 from .app_settings import (
     FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL,
+    FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS,
     FREIGHT_DISCORD_WEBHOOK_URL,
     FREIGHT_DISCORDPROXY_ENABLED,
-    FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS,
 )
 from .providers import esi
 
@@ -397,7 +397,10 @@ class ContractManagerBase(models.Manager):
         if (
             self.count() > 0
             and Pricing.objects.exists()
-            and (not self.filter(pricing__isnull=False).exists() or FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS)
+            and (
+                not self.filter(pricing__isnull=False).exists()
+                or FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS
+            )
         ):
             logger.info(
                 "There are no notifications to send, "
@@ -410,9 +413,7 @@ class ContractManagerBase(models.Manager):
 
     def _sent_pilot_notifications(self, force_sent: bool, rate_limited: bool) -> None:
         if FREIGHT_DISCORD_WEBHOOK_URL:
-            contracts_qs = self.filter(
-                status__exact=self.model.Status.OUTSTANDING
-            )
+            contracts_qs = self.filter(status__exact=self.model.Status.OUTSTANDING)
             if not FREIGHT_DISCORD_SEND_ALL_NOTIFICATIONS:
                 contracts_qs.exclude(pricing__exact=None)
             if not force_sent:

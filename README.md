@@ -190,6 +190,7 @@ Name | Description | Default
 `FREIGHT_HOURS_UNTIL_STALE_STATUS`| Defines after how many hours the status of a contract is considered to be stale. Customer notifications will not be sent for a contract status that has become stale. This settings also prevents the app from sending out customer notifications for old contracts. | `24`
 `FREIGHT_OPERATION_MODE`| See section [Operation Mode](#operation-mode) for details.<br> Note that switching operation modes requires you to remove the existing contract handler with all its contracts and then setup a new contract handler | `'my_alliance'`
 `FREIGHT_STATISTICS_MAX_DAYS`| Sets the number of days that are considered for creating the statistics  | `90`
+`FREIGHT_NOTIFY_ALL_CONTRACTS`| Sends all contracts notifications, even if they do not have corresponding pricing | `False`
 
 ## Operation Mode
 
@@ -253,7 +254,7 @@ Details | Text with additional instructions for using this pricing | Info
 
 ## Contract Check
 
-The app will automatically check if a newly issued contract complies with the pricing parameters for the respective route.
+The app will automatically check if a newly issued contract complies with the pricing parameters for the respective route. If you want to be notified about all contracts, even without correct pricing, set `FREIGHT_NOTIFY_ALL_CONTRACTS` option to `True`
 
 Compliant contracts will have a green checkmark (✓) in the "Contract Check" column on the contract list. Related notifications on Discord will be colored in green.
 

@@ -1205,9 +1205,14 @@ class Contract(models.Model):
                 username = FREIGHT_APP_NAME
                 avatar_url = self.handler.organization.icon_url(size=AVATAR_SIZE)
 
-            hook = dhooks_lite.Webhook(
-                FREIGHT_DISCORD_WEBHOOK_URL, username=username, avatar_url=avatar_url
-            )
+            if FREIGHT_DISCORD_WEBHOOK_URL:
+                hook = dhooks_lite.Webhook(
+                    FREIGHT_DISCORD_WEBHOOK_URL, username=username, avatar_url=avatar_url
+                )
+            elif FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL:
+                hook = dhooks_lite.Webhook(
+                    FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL, username=username, avatar_url=avatar_url
+                )
             with transaction.atomic():
                 logger.info(
                     "%s: Trying to sent pilot notification about contract %s to %s",

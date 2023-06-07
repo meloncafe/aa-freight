@@ -17,6 +17,7 @@ from app_utils.logging import LoggerAddTag
 
 from . import __title__, constants
 from .app_settings import (
+    FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL,
     FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL,
     FREIGHT_DISCORD_WEBHOOK_URL,
     FREIGHT_DISCORDPROXY_ENABLED,
@@ -410,7 +411,7 @@ class ContractManagerBase(models.Manager):
         self._sent_customer_notifications(force_sent, rate_limited)
 
     def _sent_pilot_notifications(self, force_sent: bool, rate_limited: bool) -> None:
-        if FREIGHT_DISCORD_WEBHOOK_URL:
+        if FREIGHT_DISCORD_WEBHOOK_URL or FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL:
             contracts_qs = self.filter(status__exact=self.model.Status.OUTSTANDING)
             if not FREIGHT_NOTIFY_ALL_CONTRACTS:
                 contracts_qs = contracts_qs.exclude(pricing__exact=None)
@@ -422,7 +423,7 @@ class ContractManagerBase(models.Manager):
             else:
                 logger.debug("No new pilot notifications.")
         else:
-            logger.debug("FREIGHT_DISCORD_WEBHOOK_URL not configured")
+            logger.debug("FREIGHT_DISCORD_WEBHOOK_URL or FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL not configured")
 
     def _sent_customer_notifications(
         self, force_sent: bool, rate_limited: bool

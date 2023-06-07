@@ -34,6 +34,7 @@ from . import __title__
 from .app_settings import (
     FREIGHT_APP_NAME,
     FREIGHT_CONTRACT_SYNC_GRACE_MINUTES,
+    FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL,
     FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL,
     FREIGHT_DISCORD_DISABLE_BRANDING,
     FREIGHT_DISCORD_MENTIONS,
@@ -1112,36 +1113,67 @@ class Contract(models.Model):
 
     def _generate_embed_description(self) -> object:
         """generates a Discord embed for this contract"""
-        desc = (
-            f"**From**: {self.start_location}\n"
-            f"**To**: {self.end_location}\n"
-            f"**Volume**: {self.volume:,.0f} m3\n"
-            f"**Reward**: {humanize_number(self.reward)} ISK\n"
-            f"**Collateral**: {humanize_number(self.collateral)} ISK\n"
-            f"**Status**: {self.status}\n"
-        )
-        if self.pricing:
-            if not self.has_pricing_errors:
-                check_text = "passed"
-                color = self.EMBED_COLOR_PASSED
+        if FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL:
+            desc = (
+                f"**From**: {self.start_location}\n"
+                f"**To**: {self.end_location}\n"
+                f"**Volume**: {self.volume:,.0f} m3\n"
+                f"**Reward**: {humanize_number(self.reward)} ISK\n"
+                f"**Collateral**: {humanize_number(self.title)} ISK\n"
+            )
+            if self.pricing:
+                if not self.has_pricing_errors:
+                    check_text = "passed"
+                    color = self.EMBED_COLOR_PASSED
+                else:
+                    check_text = "FAILED"
+                    color = self.EMBED_COLOR_FAILED
             else:
-                check_text = "FAILED"
-                color = self.EMBED_COLOR_FAILED
+                check_text = "N/A"
+                color = None
+            desc += (
+                f"**Contract Check**: {check_text}\n"
+                f"**Issued on**: {self.date_issued.strftime(DATETIME_FORMAT)}\n"
+                f"**Issued by**: {self.issuer}\n"
+                f"**Expires on**: {self.date_expired.strftime(DATETIME_FORMAT)}\n"
+            )
+            if self.acceptor_name:
+                desc += f"**Accepted by**: {self.acceptor_name}\n"
+            if self.date_accepted:
+                desc += f"**Accepted on**: {self.date_accepted.strftime(DATETIME_FORMAT)}\n"
+            desc += f"**Contract ID**: {self.contract_id}\n"
+            return {"desc": desc, "color": color}
         else:
-            check_text = "N/A"
-            color = None
-        desc += (
-            f"**Contract Check**: {check_text}\n"
-            f"**Issued on**: {self.date_issued.strftime(DATETIME_FORMAT)}\n"
-            f"**Issued by**: {self.issuer}\n"
-            f"**Expires on**: {self.date_expired.strftime(DATETIME_FORMAT)}\n"
-        )
-        if self.acceptor_name:
-            desc += f"**Accepted by**: {self.acceptor_name}\n"
-        if self.date_accepted:
-            desc += f"**Accepted on**: {self.date_accepted.strftime(DATETIME_FORMAT)}\n"
-        desc += f"**Contract ID**: {self.contract_id}\n"
-        return {"desc": desc, "color": color}
+            desc = (
+                f"**From**: {self.start_location}\n"
+                f"**To**: {self.end_location}\n"
+                f"**Volume**: {self.volume:,.0f} m3\n"
+                f"**Reward**: {humanize_number(self.reward)} ISK\n"
+                f"**Collateral**: {humanize_number(self.collateral)} ISK\n"
+                f"**Status**: {self.status}\n"
+            )
+            if self.pricing:
+                if not self.has_pricing_errors:
+                    check_text = "passed"
+                    color = self.EMBED_COLOR_PASSED
+                else:
+                    check_text = "FAILED"
+                    color = self.EMBED_COLOR_FAILED
+            else:
+                check_text = "N/A"
+                color = None
+            desc += (
+                f"**Contract Check**: {check_text}\n"
+                f"**Issued on**: {self.date_issued.strftime(DATETIME_FORMAT)}\n"
+                f"**Issued by**: {self.issuer}\n"
+                f"**Expires on**: {self.date_expired.strftime(DATETIME_FORMAT)}\n"
+            )
+            if self.acceptor_name:
+                desc += f"**Accepted by**: {self.acceptor_name}\n"
+            if self.date_accepted:
+                desc += f"**Accepted on**: {self.date_accepted.strftime(DATETIME_FORMAT)}\n"
+            desc += f"**Contract ID**: {self.contract_id}\n"
+            return {"desc": desc, "color": color}
 
     def _generate_embed(self, for_issuer=False) -> dhooks_lite.Embed:
         embed_desc = self._generate_embed_description()
@@ -1165,7 +1197,7 @@ class Contract(models.Model):
 
     def send_pilot_notification(self):
         """sends pilot notification about this contract to the DISCORD webhook"""
-        if FREIGHT_DISCORD_WEBHOOK_URL:
+        if FREIGHT_DISCORD_WEBHOOK_URL or FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL:
             if FREIGHT_DISCORD_DISABLE_BRANDING:
                 username = None
                 avatar_url = None
@@ -1191,11 +1223,12 @@ class Contract(models.Model):
                 contract_list_url = urljoin(
                     site_absolute_url(), reverse("freight:contract_list_all")
                 )
-                contents += (
-                    "There is a new courier contract from {} "
-                    "looking to be picked up "
-                    "[[show]({})]:"
-                ).format(self.issuer, contract_list_url)
+                if FREIGHT_DISCORD_WEBHOOK_URL:
+                    contents += (
+                        "There is a new courier contract from {} "
+                        "looking to be picked up "
+                        "[[show]({})]:"
+                    ).format(self.issuer, contract_list_url)
 
                 embed = self._generate_embed()
                 response = hook.execute(

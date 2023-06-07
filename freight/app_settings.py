@@ -41,6 +41,11 @@ FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL = clean_setting(
     "FREIGHT_DISCORD_CUSTOMERS_WEBHOOK_URL", None, required_type=str
 )
 
+# Siege Green Only Webhook URL used for notifications if defined
+FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL = clean_setting(
+    "FREIGHT_DISCORD_SIEGE_GREEN_WEBHOOK_URL", None, required_type=str
+)
+
 # defines after how many hours a status becomes stale
 # a stale status will not be reported to customers
 FREIGHT_HOURS_UNTIL_STALE_STATUS = clean_setting("FREIGHT_HOURS_UNTIL_STALE_STATUS", 24)

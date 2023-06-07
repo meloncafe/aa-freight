@@ -1121,6 +1121,9 @@ class Contract(models.Model):
                 f"**Reward**: {humanize_number(self.reward)} ISK\n"
                 f"**Collateral**: {self.title} ISK\n"
             )
+            if self.title is None or self.title == "":
+                raise ValueError("Contract title is empty")
+
             if self.pricing:
                 if not self.has_pricing_errors:
                     check_text = "passed"

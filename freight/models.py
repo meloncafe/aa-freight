@@ -1119,7 +1119,7 @@ class Contract(models.Model):
                 f"**To**: {self.end_location}\n"
                 f"**Volume**: {self.volume:,.0f} m3\n"
                 f"**Reward**: {humanize_number(self.reward)} ISK\n"
-                f"**Collateral**: {humanize_number(self.title)} ISK\n"
+                f"**Collateral**: {self.title} ISK\n"
             )
             if self.pricing:
                 if not self.has_pricing_errors:

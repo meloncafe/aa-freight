@@ -202,7 +202,14 @@ class ContractQuerySet(models.QuerySet):
         logger.info("Trying to send pilot notifications for %d contracts", self.count())
         for contract in self:
             if not contract.has_expired:
-                contract.send_pilot_notification()
+                try:
+                    contract.send_pilot_notification()
+                except Exception as ex:
+                    logger.error(
+                        "Failed to send pilot notification for contract %d: %s",
+                        contract.contract_id,
+                        ex,
+                    )
                 if rate_limited:
                     sleep(1)
             else:

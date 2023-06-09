@@ -1124,7 +1124,7 @@ class Contract(models.Model):
             if self.title is None or self.title == "":
                 raise ValueError("Contract title is not empty")
 
-            if self.collateral != 0:
+            if self.collateral != 0.0:
                 raise ValueError("Contract collateral is not zero")
 
             if self.pricing:

@@ -28,6 +28,7 @@
 
                             {{ form.pricing|bootstrap }}
                             {{ form.volume|bootstrap }}
+                            {% if pricing.requires_collateral %}
                             <div class="form-group">
                                 <label class="control-label" for="id_collateral">{{ form.collateral.label }}</label>
                                 <div class=" ">
@@ -39,6 +40,7 @@
                                     </p>
                                 </div>
                             </div>
+                            {% endif %}
                             <br>
                             <p><strong>{% translate "Reward" %}</strong></p>
                             <h2 id="text_price">

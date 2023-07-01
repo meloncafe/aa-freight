@@ -244,6 +244,7 @@ def calculator(request, pricing_pk=None):
         "expires_on": expires_on,
         "availability": availability,
         "pricing_price_per_volume_eff": price_per_volume_eff,
+        "collateral_zero": settings.FREIGHT_COLLATERAL_ZERO,
     }
     return render(
         request, "freight/calculator.html", add_common_context(request, context)

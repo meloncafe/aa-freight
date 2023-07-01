@@ -84,3 +84,6 @@ FREIGHT_DISCORDPROXY_PORT = clean_setting("FREIGHT_DISCORDPROXY_PORT", 50051)
 
 # Send discord notifications about every contract, even if no pricing defined
 FREIGHT_NOTIFY_ALL_CONTRACTS = clean_setting("FREIGHT_NOTIFY_ALL_CONTRACTS", False)
+
+# Collateral zero
+FREIGHT_COLLATERAL_ZERO = clean_setting("FREIGHT_COLLATERAL_ZERO", False)

@@ -5,7 +5,7 @@ stages:
 
 pre-commit-check:
   stage: checks
-  image: python:3.10-bullseye
+  image: python:3.13-bullseye
   variables:
     PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
   cache:
@@ -25,41 +25,41 @@ pre-commit-check:
 
 test-38-django40:
   extends: .test
-  image: python:3.8-bullseye
+  image: python:3.13-bullseye
   script:
   - tox -e py38-django40
   - bash <(curl -s https://codecov.io/bash)
 
 test-39-django40:
   extends: .test
-  image: python:3.9-bullseye
+  image: python:3.13-bullseye
   script:
   - tox -e py39-django40
   - bash <(curl -s https://codecov.io/bash)
 
 test-310-django40:
   extends: .test
-  image: python:3.10-bullseye
+  image: python:3.13-bullseye
   script:
   - tox -e py310-django40
   - bash <(curl -s https://codecov.io/bash)
 
 test-311-django40:
   extends: .test
-  image: python:3.11-bullseye
+  image: python:3.13-bullseye
   script:
   - tox -e py311-django40
   - bash <(curl -s https://codecov.io/bash)
 
 test-core:
   extends: .test
-  image: python:3.10-bullseye
+  image: python:3.13-bullseye
   script:
   - tox -e core
 
 deploy-pypi:
   stage: deploy
-  image: python:3.10-bullseye
+  image: python:3.13-bullseye
 
   before_script:
     - pip install build twine
